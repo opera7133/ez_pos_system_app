@@ -6,6 +6,12 @@
 
 レシートプリンター：[EZ POS SYSTEM PRINT](https://github.com/opera7133/ez_pos_system_print)
 
+## 機能
+
+- バーコード読み取り
+- Squareアプリでの決済
+- 複数デバイスでの会計
+
 ## 対応環境
 
 Android
@@ -30,6 +36,9 @@ flutter pub get
 ```shell
 flutter build apk
 ```
+
+> [!NOTE]
+> 商品はFirebaseコンソールのCloud Firestoreから**手動で**登録してください。
 
 ## 利用サービス
 
