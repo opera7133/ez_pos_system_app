@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "729854750335",
+    "project_id": "eazy-pos-system",
+    "storage_bucket": "eazy-pos-system.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:729854750335:android:b7c9d9467c82006067994a",
+        "android_client_info": {
+          "package_name": "com.example.ez_pos_system_app"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBbsU6DpBazthcyVUOIItedh_oYEreNZbY"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
