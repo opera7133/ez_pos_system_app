@@ -56,6 +56,9 @@ class _OrderState extends State<OrderPage> {
     if (Platform.isAndroid) {
       var androidInfo = await deviceInfo.androidInfo;
       deviceIdentifier = androidInfo.id;
+    } else if (Platform.isIOS) {
+      var iosInfo = await deviceInfo.iosInfo;
+      deviceIdentifier = iosInfo.identifierForVendor!;
     }
 
     return deviceIdentifier;
