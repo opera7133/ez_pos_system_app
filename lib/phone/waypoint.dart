@@ -47,6 +47,12 @@ class _WayPointState extends State<WayPoint> {
     });
   }
 
+  Future<void> stopOrder() async {
+    await firestore.collection('CURRENT_ORDER').doc(currentOrderId).update({
+      'status': 'canceled',
+    });
+  }
+
   Future<void> _openSquareReaderPayment() async {
     await updateOrder(getTotal());
     final arguments = <String, dynamic>{
@@ -64,8 +70,9 @@ class _WayPointState extends State<WayPoint> {
             content: Text('Squareでの支払いに失敗しました'),
           ),
         );
+        await stopOrder();
         processing = false;
-        updateOrder(0);
+        await updateOrder(0);
       }
     } on PlatformException catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -73,8 +80,9 @@ class _WayPointState extends State<WayPoint> {
           content: Text('Squareでの支払いに失敗しました: ${e.message}'),
         ),
       );
+      await stopOrder();
       processing = false;
-      updateOrder(0);
+      await updateOrder(0);
     }
   }
 
