@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:ez_pos_system_app/order.dart';
+import 'package:ez_pos_system_app/tablet/order.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 class Result extends StatelessWidget {

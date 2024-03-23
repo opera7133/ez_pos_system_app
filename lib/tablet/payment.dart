@@ -1,9 +1,10 @@
 import 'dart:math';
 
+import 'package:ez_pos_system_app/tablet/waiting.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_svg/svg.dart';
-import 'package:ez_pos_system_app/result.dart';
+import 'package:ez_pos_system_app/tablet/result.dart';
 import 'package:flutter/services.dart';
 
 class Payment extends StatefulWidget {
@@ -44,6 +45,17 @@ class _PaymentState extends State<Payment> {
     var r = Random();
     const chars = '0123456789';
     return List.generate(len, (index) => chars[r.nextInt(chars.length)]).join();
+  }
+
+  Future<void> openTerminal() async {
+    await firestore
+        .collection("CURRENT_ORDER")
+        .doc(currentOrderId)
+        .update({"status": "waitingSquare"});
+    Navigator.push(
+        context,
+        MaterialPageRoute(
+            builder: (context) => Waiting(currentOrderId: currentOrderId)));
   }
 
   Future<void> _openSquareReaderPayment() async {
@@ -113,6 +125,11 @@ class _PaymentState extends State<Payment> {
     await firestore.collection('CURRENT_ORDER').doc(currentOrderId).update({
       'deposit': deposit,
     });
+  }
+
+  Future<void> cancelPayment() async {
+    await updateOrder(0);
+    Navigator.pop(context);
   }
 
   @override
@@ -228,7 +245,8 @@ class _PaymentState extends State<Payment> {
                                   ),
                                 ),
                                 onPressed: () {
-                                  _openSquareReaderPayment();
+                                  //_openSquareReaderPayment();
+                                  openTerminal();
                                 },
                                 child: Padding(
                                     padding: const EdgeInsets.symmetric(
@@ -255,8 +273,7 @@ class _PaymentState extends State<Payment> {
                     ),
                     child: const Text("戻る", style: TextStyle(fontSize: 20)),
                     onPressed: () {
-                      updateOrder(0);
-                      Navigator.pop(context);
+                      cancelPayment();
                     },
                   ),
                 )
