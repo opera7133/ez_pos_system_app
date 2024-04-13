@@ -29,13 +29,15 @@
 flutterfire configure
 ```
 
-2. 依存関係の追加
+2. `.env`の設定
+
+3. 依存関係の追加
 
 ```shell
 flutter pub get
 ```
 
-3. ビルド
+4. ビルド
 
 ```shell
 flutter build apk
