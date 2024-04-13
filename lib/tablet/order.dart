@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
@@ -9,6 +10,9 @@ import 'package:ez_pos_system_app/tablet/payment.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:http/http.dart' as http;
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 
 class OrderPage extends StatefulWidget {
   const OrderPage({Key? key}) : super(key: key);
@@ -18,6 +22,7 @@ class OrderPage extends StatefulWidget {
 }
 
 class _OrderState extends State<OrderPage> {
+  String kuttLink = '';
   List<Map<String, dynamic>> items = [];
   List<Image> images = [];
   List<Map<String, dynamic>> orders = [];
@@ -32,6 +37,10 @@ class _OrderState extends State<OrderPage> {
       detectionSpeed: DetectionSpeed.normal);
 
   Future<void> getItems() async {
+    setState(() {
+      this.items = [];
+      images = [];
+    });
     final QuerySnapshot<Map<String, dynamic>> items =
         await firestore.collection('ITEMS').get();
     for (final QueryDocumentSnapshot<Map<String, dynamic>> item in items.docs) {
@@ -154,6 +163,46 @@ class _OrderState extends State<OrderPage> {
     await controller.stop().whenComplete(() => controller.start());
   }
 
+  Future<void> createShortenLink() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    Uri url = Uri.parse("https://${dotenv.env["KUTT_DOMAIN"]}/api/v2/links");
+    Map<String, String> headers = {
+      "X-API-KEY": dotenv.env["KUTT_APIKEY"]!,
+      "Content-Type": "application/json"
+    };
+    String body = jsonEncode({
+      'target':
+          "https://${dotenv.env["EZ_POS_WEB_DOMAIN"]}/?color=black&deviceId=${await getDeviceUniqueId()}",
+      'expire_in': "10 hours",
+    });
+    http.Response response = await http.post(url, headers: headers, body: body);
+    if (response.statusCode == 201) {
+      Map<String, dynamic> data = jsonDecode(response.body);
+      prefs.setString("kuttLink", data['link']);
+      setState(() {
+        kuttLink = data['link'];
+      });
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('短縮URLを作成できませんでした'),
+        ),
+      );
+    }
+  }
+
+  Future<void> getShortenLink() async {
+    final SharedPreferences prefs = await SharedPreferences.getInstance();
+    String? kuttLink = prefs.getString("kuttLink");
+    if (kuttLink == null) {
+      createShortenLink();
+    } else {
+      setState(() {
+        this.kuttLink = kuttLink;
+      });
+    }
+  }
+
   @override
   void initState() {
     super.initState();
@@ -161,6 +210,7 @@ class _OrderState extends State<OrderPage> {
     _deviceId = getDeviceUniqueId();
     getItems();
     getCurrentOrder();
+    getShortenLink();
   }
 
   @override
@@ -302,19 +352,36 @@ class _OrderState extends State<OrderPage> {
                         return Row(
                             mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                             children: [
-                              Text(
-                                'Device ID: ${snapshot.data}',
-                                style: const TextStyle(fontSize: 20),
-                              ),
+                              IconButton(
+                                  icon: const Icon(Icons.refresh),
+                                  onPressed: () {
+                                    getItems();
+                                  },
+                                  tooltip: "商品を更新"),
                               QrImageView(
                                 data: snapshot.data!,
                                 version: QrVersions.auto,
                                 size: 100.0,
                               ),
+                              IconButton(
+                                  icon: const Icon(Icons.refresh),
+                                  onPressed: () {
+                                    createShortenLink();
+                                  },
+                                  tooltip: "URLを更新"),
+                              QrImageView(
+                                data: kuttLink,
+                                version: QrVersions.auto,
+                                eyeStyle: const QrEyeStyle(
+                                  eyeShape: QrEyeShape.square,
+                                  color: Colors.blue,
+                                ),
+                                size: 100.0,
+                              ),
                             ]);
                       }
                       if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Text("Device ID: Loading...");
+                        return const Text("Loading device info...");
                       }
                       return const Icon(Icons.error);
                     },

@@ -1036,6 +1036,8 @@ PODS:
   - sqflite (0.0.3):
     - Flutter
     - FlutterMacOS
+  - sunmi_printer_plus (0.0.1):
+    - Flutter
 
 DEPENDENCIES:
   - appcheck (from `.symlinks/plugins/appcheck/ios`)
@@ -1049,6 +1051,7 @@ DEPENDENCIES:
   - path_provider_foundation (from `.symlinks/plugins/path_provider_foundation/darwin`)
   - shared_preferences_foundation (from `.symlinks/plugins/shared_preferences_foundation/darwin`)
   - sqflite (from `.symlinks/plugins/sqflite/darwin`)
+  - sunmi_printer_plus (from `.symlinks/plugins/sunmi_printer_plus/ios`)
 
 SPEC REPOS:
   trunk:
@@ -1103,6 +1106,8 @@ EXTERNAL SOURCES:
     :path: ".symlinks/plugins/shared_preferences_foundation/darwin"
   sqflite:
     :path: ".symlinks/plugins/sqflite/darwin"
+  sunmi_printer_plus:
+    :path: ".symlinks/plugins/sunmi_printer_plus/ios"
 
 SPEC CHECKSUMS:
   abseil: ebec4f56469dd7ce9ab08683c0319a68aa0ad86e
@@ -1143,6 +1148,7 @@ SPEC CHECKSUMS:
   PromisesObjC: f5707f49cb48b9636751c5b2e7d227e43fba9f47
   shared_preferences_foundation: b4c3b4cddf1c21f02770737f147a3f5da9d39695
   sqflite: 673a0e54cc04b7d6dba8d24fb8095b31c3a99eec
+  sunmi_printer_plus: 4ab3f09a655a47913c53ff5219323cbb04ebfbd7
 
 PODFILE CHECKSUM: 9386159f29a1fcb3ef440665ced791f18b44ee5a
 
