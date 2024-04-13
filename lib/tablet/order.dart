@@ -8,6 +8,7 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:ez_pos_system_app/tablet/payment.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:audioplayers/audioplayers.dart';
+import 'package:qr_flutter/qr_flutter.dart';
 
 class OrderPage extends StatefulWidget {
   const OrderPage({Key? key}) : super(key: key);
@@ -298,39 +299,25 @@ class _OrderState extends State<OrderPage> {
                     builder:
                         (BuildContext context, AsyncSnapshot<String> snapshot) {
                       if (snapshot.connectionState == ConnectionState.done) {
-                        return Text(
-                          'Device ID: ${snapshot.data}',
-                          style: const TextStyle(fontSize: 20),
-                        );
+                        return Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                            children: [
+                              Text(
+                                'Device ID: ${snapshot.data}',
+                                style: const TextStyle(fontSize: 20),
+                              ),
+                              QrImageView(
+                                data: snapshot.data!,
+                                version: QrVersions.auto,
+                                size: 100.0,
+                              ),
+                            ]);
                       }
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return const Text("Device ID: Loading...");
                       }
                       return const Icon(Icons.error);
                     },
-                  ),
-                  SizedBox(
-                    width: double.infinity,
-                    height: 60,
-                    child: MobileScanner(
-                      controller: controller,
-                      onDetect: (capture) {
-                        final List<Barcode> barcodes = capture.barcodes;
-                        for (final barcode in barcodes) {
-                          if (barcode.type == BarcodeType.product) {
-                            player.resume();
-                            if (items.any((element) =>
-                                element.containsKey("isdn") &&
-                                element['isdn'] == barcode.rawValue)) {
-                              final int index = items.indexWhere((element) =>
-                                  element.containsKey("isdn") &&
-                                  element['isdn'] == barcode.rawValue);
-                              addToOrder(index);
-                            }
-                          }
-                        }
-                      },
-                    ),
                   ),
                 ],
               ),

@@ -118,8 +118,7 @@ class _WayPointState extends State<WayPoint> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-        body: Padding(
-      padding: const EdgeInsets.all(24),
+        body: Center(
       child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           crossAxisAlignment: CrossAxisAlignment.center,
@@ -147,9 +146,19 @@ class _WayPointState extends State<WayPoint> {
                           }
                         }
                       }
-                      return const Center(
-                        child: CircularProgressIndicator(),
-                      );
+                      return Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            const Icon(Icons.sensors, size: 100),
+                            const Text('Squareでの支払いを待機中です'),
+                            const SizedBox(height: 20),
+                            ElevatedButton(
+                                onPressed: () {
+                                  Navigator.pop(context);
+                                },
+                                child: const Text('戻る'))
+                          ]);
                     }))
           ]),
     ));

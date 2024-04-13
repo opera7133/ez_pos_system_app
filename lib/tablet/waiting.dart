@@ -68,7 +68,7 @@ class _WaitingState extends State<Waiting> {
                       if (snapshot.hasData) {
                         final document =
                             snapshot.data!.data() as Map<String, dynamic>;
-                        if (document.containsKey("complete") &&
+                        if (document.containsKey("status") &&
                             document["status"] == "complete") {
                           completePayment();
                         }

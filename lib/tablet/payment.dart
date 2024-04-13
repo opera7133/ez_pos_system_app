@@ -94,6 +94,7 @@ class _PaymentState extends State<Payment> {
       "amount": getTotal(),
       "type": type,
       "orderedAt": FieldValue.serverTimestamp(),
+      "status": "complete",
     });
     if (type == "square") {
       await firestore

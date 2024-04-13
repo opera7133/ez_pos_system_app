@@ -4,17 +4,21 @@
 
 カスタマーディスプレイ：[EZ POS SYSTEM WEB](https://github.com/opera7133/ez_pos_system_web)
 
-レシートプリンター：[EZ POS SYSTEM PRINT](https://github.com/opera7133/ez_pos_system_print)
+レシートプリンター（USB）：[EZ POS SYSTEM PRINT](https://github.com/opera7133/ez_pos_system_print)
 
 ## 機能
 
-- バーコード読み取り
 - Squareアプリでの決済
+- レシート印刷
 - 複数デバイスでの会計
 
 ## 対応環境
 
-Android
+- Android
+- iOS（未検証）
+
+> [!NOTE]
+> レシートプリンターはSUNMI端末のみサポートしています。
 
 ## ビルド
 
@@ -39,6 +43,7 @@ flutter build apk
 
 > [!NOTE]
 > 商品はFirebaseコンソールのCloud Firestoreから**手動で**登録してください。
+> FireCMSなどのFirebase向けHeadless CMSを使用すると便利です。
 
 ## 利用サービス
 
@@ -76,7 +81,9 @@ flutter build apk
   }[]
   orderedAt: Timestamp
   orderId: String
+  printed: Boolean
   receiptId: String
+  status: "waitingSquare" | "complete"
   type: "cash" | "square"
 }
 
@@ -96,7 +103,9 @@ flutter build apk
   }[]
   orderedAt?: Timestamp
   orderId: String
+  printed?: Boolean
   receiptId?: String
+  status?: "waitingSquare" | "complete"
   type?: "cash" | "square"
 }
 ```

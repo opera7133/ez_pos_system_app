@@ -46,3 +46,7 @@ app.*.map.json
 
 /lib/firebase_options.dart
 /assets/*.mp3
+
+GoogleService-Info.plist
+
+.DS_Store
