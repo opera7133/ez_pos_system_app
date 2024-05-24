@@ -4,7 +4,7 @@
 
 カスタマーディスプレイ：[EZ POS SYSTEM WEB](https://github.com/opera7133/ez_pos_system_web)
 
-レシートプリンター（USB）：[EZ POS SYSTEM PRINT](https://github.com/opera7133/ez_pos_system_print)
+レシートプリンター（USB, Bluetooth）：[EZ POS SYSTEM PRINT](https://github.com/opera7133/ez_pos_system_print)
 
 ## 機能
 
@@ -15,10 +15,15 @@
 ## 対応環境
 
 - Android
-- iOS（未検証）
+- iOS
 
 > [!NOTE]
 > レシートプリンターはSUNMI端末のみサポートしています。
+
+> [!NOTE]
+> 決済端末はSquare ReaderまたはSquare Tap to Payをサポートしている端末を推奨します。
+>
+> https://squareup.com/jp/ja/compatibility
 
 ## ビルド
 
@@ -30,7 +35,6 @@ flutterfire configure
 ```
 
 2. `.env`の設定
-
 3. 依存関係の追加
 
 ```shell
@@ -41,6 +45,12 @@ flutter pub get
 
 ```shell
 flutter build apk
+```
+
+iOS版を開発者アカウントなしでインストールする場合、以下のコマンドを実行後、XCodeのWindow > Devices and Simulatorsからインストールするデバイスを選択し、作成された.appを選択します。
+
+```shell
+flutter build ios
 ```
 
 > [!NOTE]

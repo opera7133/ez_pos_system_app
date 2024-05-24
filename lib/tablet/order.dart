@@ -2,6 +2,7 @@ import 'dart:convert';
 import 'dart:io';
 
 import 'package:device_info_plus/device_info_plus.dart';
+import 'package:ez_pos_system_app/tablet/settings.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -13,6 +14,7 @@ import 'package:qr_flutter/qr_flutter.dart';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:sunmi_printer_plus/sunmi_printer_plus.dart';
 
 class OrderPage extends StatefulWidget {
   const OrderPage({Key? key}) : super(key: key);
@@ -378,6 +380,15 @@ class _OrderState extends State<OrderPage> {
                                 ),
                                 size: 100.0,
                               ),
+                              IconButton(
+                                  icon: const Icon(Icons.settings),
+                                  onPressed: () {
+                                    Navigator.push((context),
+                                        MaterialPageRoute(builder: (context) {
+                                      return SettingsPage();
+                                    }));
+                                  },
+                                  tooltip: "設定"),
                             ]);
                       }
                       if (snapshot.connectionState == ConnectionState.waiting) {

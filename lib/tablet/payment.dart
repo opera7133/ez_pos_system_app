@@ -6,6 +6,12 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:ez_pos_system_app/tablet/result.dart';
 import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sunmi_printer_plus/column_maker.dart';
+import 'package:sunmi_printer_plus/enums.dart';
+import 'package:sunmi_printer_plus/sunmi_printer_plus.dart';
+import 'package:sunmi_printer_plus/sunmi_style.dart';
 
 class Payment extends StatefulWidget {
   final String currentOrderId;
@@ -23,6 +29,9 @@ class _PaymentState extends State<Payment> {
   String currentOrderId = '';
   num deposit = 0;
   String? depositError;
+  bool enableSquare = false;
+  bool enablePrinter = false;
+  DateFormat formatter = DateFormat('yyyy-MM-dd HH:mm');
   static const squareChannel = MethodChannel('ezpos/square');
 
   num getQuantity() {
@@ -88,6 +97,16 @@ class _PaymentState extends State<Payment> {
   Future<void> completePayment(
       num deposit, String type, String transactionId) async {
     String barcode = generateRandomString(13);
+    printReceipt({
+      "deviceId": currentOrderId,
+      "items": orders,
+      "deposit": deposit,
+      "amount": getTotal(),
+      "type": type,
+      "orderedAt": FieldValue.serverTimestamp(),
+      "status": "complete",
+      "receiptId": barcode,
+    });
     await firestore.collection("CURRENT_ORDER").doc(currentOrderId).update({
       'receiptId': barcode,
       "deposit": deposit,
@@ -122,6 +141,126 @@ class _PaymentState extends State<Payment> {
                 )));
   }
 
+  Future<void> printReceipt(order) async {
+    await firestore
+        .collection("CURRENT_ORDER")
+        .doc(currentOrderId)
+        .update({"printed": true});
+    await SunmiPrinter.initPrinter();
+    await SunmiPrinter.startTransactionPrint();
+    await SunmiPrinter.setAlignment(SunmiPrintAlign.CENTER);
+    await SunmiPrinter.lineWrap(2);
+    await SunmiPrinter.printText('電通部',
+        style: SunmiStyle(fontSize: SunmiFontSize.LG));
+    await SunmiPrinter.printText('東京都品川区東大井1-10-40');
+    await SunmiPrinter.lineWrap(1);
+    await SunmiPrinter.printText(formatter.format(DateTime.now()));
+    await SunmiPrinter.printText('ID: ${order["deviceId"]}');
+    await SunmiPrinter.lineWrap(1);
+    await SunmiPrinter.setAlignment(SunmiPrintAlign.CENTER);
+    await SunmiPrinter.printText("領 収 書");
+    await SunmiPrinter.lineWrap(1);
+    await SunmiPrinter.line();
+    await SunmiPrinter.lineWrap(1);
+    for (final Map<String, dynamic> item in order["items"]) {
+      if (item["quantity"] > 1) {
+        await SunmiPrinter.printText(item["name"]);
+        await SunmiPrinter.printRow(cols: [
+          ColumnMaker(text: '', width: 2, align: SunmiPrintAlign.LEFT),
+          ColumnMaker(
+              text: '¥${item["price"]}',
+              width: 12,
+              align: SunmiPrintAlign.LEFT),
+          ColumnMaker(
+              text: '${item["quantity"]}点',
+              width: 7,
+              align: SunmiPrintAlign.LEFT),
+          ColumnMaker(
+              text: '¥${item["price"] * item["quantity"]}',
+              width: 12,
+              align: SunmiPrintAlign.RIGHT)
+        ]);
+      } else {
+        await SunmiPrinter.printRow(cols: [
+          ColumnMaker(
+              text: item["name"], width: 22, align: SunmiPrintAlign.LEFT),
+          ColumnMaker(
+              text: '¥${item["price"]}',
+              width: 12,
+              align: SunmiPrintAlign.RIGHT)
+        ]);
+      }
+    }
+    await SunmiPrinter.lineWrap(1);
+    await SunmiPrinter.printRow(cols: [
+      ColumnMaker(text: '小計', width: 10, align: SunmiPrintAlign.LEFT),
+      ColumnMaker(
+          text: "${getQuantity()}点", width: 9, align: SunmiPrintAlign.LEFT),
+      ColumnMaker(
+          text: '¥${getTotal()}', width: 14, align: SunmiPrintAlign.RIGHT)
+    ]);
+    await SunmiPrinter.bold();
+    await SunmiPrinter.printRow(cols: [
+      ColumnMaker(text: '合計', width: 20, align: SunmiPrintAlign.LEFT),
+      ColumnMaker(
+          text: '¥${getTotal()}', width: 14, align: SunmiPrintAlign.RIGHT)
+    ]);
+    await SunmiPrinter.resetBold();
+    await SunmiPrinter.lineWrap(1);
+    if (order["type"] == "cash") {
+      await SunmiPrinter.printRow(cols: [
+        ColumnMaker(text: '現金', width: 20, align: SunmiPrintAlign.LEFT),
+        ColumnMaker(
+            text: '¥${order["deposit"]}',
+            width: 14,
+            align: SunmiPrintAlign.RIGHT)
+      ]);
+    } else {
+      await SunmiPrinter.printRow(cols: [
+        ColumnMaker(text: '電子決済', width: 20, align: SunmiPrintAlign.LEFT),
+        ColumnMaker(
+            text: '¥${order["deposit"]}',
+            width: 14,
+            align: SunmiPrintAlign.RIGHT)
+      ]);
+    }
+    await SunmiPrinter.printRow(cols: [
+      ColumnMaker(text: 'お釣り', width: 20, align: SunmiPrintAlign.LEFT),
+      ColumnMaker(
+          text: '¥${order["deposit"] - getTotal()}',
+          width: 14,
+          align: SunmiPrintAlign.RIGHT)
+    ]);
+    await SunmiPrinter.lineWrap(1);
+    await SunmiPrinter.line();
+    await SunmiPrinter.lineWrap(1);
+    await SunmiPrinter.printBarCode(
+      order["receiptId"],
+      height: 60,
+      textPosition: SunmiBarcodeTextPos.TEXT_UNDER,
+    );
+    await SunmiPrinter.lineWrap(4);
+    await SunmiPrinter.submitTransactionPrint();
+    await SunmiPrinter.exitTransactionPrint();
+  }
+
+  Future<void> bindPrinter() async {
+    final bool? res = await SunmiPrinter.bindingPrinter();
+    if (res != null && res) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('プリンターに接続しました'),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('プリンターに接続できませんでした'),
+        ),
+      );
+    }
+  }
+
   Future<void> updateOrder(num deposit) async {
     await firestore.collection('CURRENT_ORDER').doc(currentOrderId).update({
       'deposit': deposit,
@@ -133,11 +272,29 @@ class _PaymentState extends State<Payment> {
     Navigator.pop(context);
   }
 
+  Future<bool?> getSettings({String key = ""}) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(key);
+  }
+
   @override
   void initState() {
     super.initState();
     orders = widget.orders;
     currentOrderId = widget.currentOrderId;
+    getSettings(key: "enableSquare").then((value) {
+      setState(() {
+        enableSquare = value ?? false;
+      });
+    });
+    getSettings(key: "enablePrinter").then((value) {
+      setState(() {
+        enablePrinter = value ?? false;
+        if (enablePrinter) {
+          bindPrinter();
+        }
+      });
+    });
   }
 
   @override
@@ -158,7 +315,7 @@ class _PaymentState extends State<Payment> {
                           children: [
                             const Text("合計", style: TextStyle(fontSize: 24)),
                             Text("${getTotal().toString()}円",
-                                style: TextStyle(fontSize: 24)),
+                                style: const TextStyle(fontSize: 24)),
                           ],
                         ),
                         Row(
@@ -166,7 +323,7 @@ class _PaymentState extends State<Payment> {
                           children: [
                             const Text("点数", style: TextStyle(fontSize: 24)),
                             Text("${getQuantity().toString()}点",
-                                style: TextStyle(fontSize: 24)),
+                                style: const TextStyle(fontSize: 24)),
                           ],
                         )
                       ],
@@ -246,8 +403,11 @@ class _PaymentState extends State<Payment> {
                                   ),
                                 ),
                                 onPressed: () {
-                                  //_openSquareReaderPayment();
-                                  openTerminal();
+                                  if (enableSquare == false) {
+                                    openTerminal();
+                                  } else {
+                                    _openSquareReaderPayment();
+                                  }
                                 },
                                 child: Padding(
                                     padding: const EdgeInsets.symmetric(
