@@ -93,6 +93,7 @@ class _OrderState extends State<OrderPage> {
   }
 
   Future<void> addToOrder(int index) async {
+    await displayLCD(items[index]['name'], items[index]['price']);
     if (orders.any((element) => element['itemId'] == items[index]['itemId'])) {
       final int orderIndex = orders
           .indexWhere((element) => element['itemId'] == items[index]['itemId']);
@@ -132,6 +133,7 @@ class _OrderState extends State<OrderPage> {
     await firestore.collection('CURRENT_ORDER').doc(currentOrderId).update({
       'items': orders,
     });
+    await SunmiPrinter.lcdClear();
   }
 
   Future<void> getCurrentOrder() async {
@@ -205,6 +207,22 @@ class _OrderState extends State<OrderPage> {
     }
   }
 
+  Future<bool?> getSettings({String key = ""}) async {
+    SharedPreferences prefs = await SharedPreferences.getInstance();
+    return prefs.getBool(key);
+  }
+
+  Future<void> startLCD() async {
+    await SunmiPrinter.bindingPrinter();
+    await SunmiPrinter.lcdInitialize();
+    await SunmiPrinter.lcdWakeup();
+    await SunmiPrinter.lcdClear();
+  }
+
+  Future<void> displayLCD(String itemName, num price) async {
+    await SunmiPrinter.lcdDoubleString(itemName, "$price円");
+  }
+
   @override
   void initState() {
     super.initState();
@@ -213,6 +231,11 @@ class _OrderState extends State<OrderPage> {
     getItems();
     getCurrentOrder();
     getShortenLink();
+    getSettings(key: "enableLCD").then((value) {
+      if (value ?? false) {
+        startLCD();
+      }
+    });
   }
 
   @override

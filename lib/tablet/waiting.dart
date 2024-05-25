@@ -38,7 +38,7 @@ class _WaitingState extends State<Waiting> {
     Navigator.pushReplacement(
         context,
         MaterialPageRoute(
-            builder: (context) => Result(
+            builder: (context) => ResultPage(
                   currentOrderId: currentOrderId,
                 )));
   }
