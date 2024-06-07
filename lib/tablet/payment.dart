@@ -506,60 +506,103 @@ class _PaymentState extends State<Payment> {
                           )),
                     ),
                     Expanded(
-                        flex: 3,
-                        child: Padding(
-                          padding: const EdgeInsets.all(20),
-                          child: Center(
-                            child: ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(20),
+                      flex: 3,
+                      child: Column(
+                          mainAxisAlignment: MainAxisAlignment.center,
+                          crossAxisAlignment: CrossAxisAlignment.center,
+                          children: [
+                            Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.all(20),
+                                    child: Center(
+                                      child: ElevatedButton(
+                                          style: ElevatedButton.styleFrom(
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(20),
+                                            ),
+                                          ),
+                                          onPressed: () {
+                                            completePayment(
+                                                getTotal(), "airpay", "");
+                                          },
+                                          child: Padding(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      vertical: 60,
+                                                      horizontal: 30),
+                                              child: Image.asset(
+                                                "assets/air_logo.png",
+                                                width: 80,
+                                                height: 80,
+                                              ))),
+                                    ),
                                   ),
-                                ),
-                                onPressed: () {
-                                  completePayment(getTotal(), "airpay", "");
-                                },
-                                child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 60, horizontal: 30),
-                                    child: Image.asset(
-                                      "assets/air_logo.png",
-                                      width: 150,
-                                      height: 150,
-                                    ))),
-                          ),
-                        )),
-                    Expanded(
-                        flex: 3,
-                        child: Padding(
-                          padding: const EdgeInsets.all(20),
-                          child: Center(
-                            child: ElevatedButton(
-                                style: ElevatedButton.styleFrom(
-                                  shape: RoundedRectangleBorder(
-                                    borderRadius: BorderRadius.circular(20),
+                                  Padding(
+                                    padding: const EdgeInsets.all(20),
+                                    child: Center(
+                                      child: ElevatedButton(
+                                          style: ElevatedButton.styleFrom(
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(20),
+                                            ),
+                                          ),
+                                          onPressed: () {
+                                            if (enableSquare == false) {
+                                              openTerminal();
+                                            } else {
+                                              _openSquareReaderPayment();
+                                            }
+                                          },
+                                          child: Padding(
+                                              padding:
+                                                  const EdgeInsets.symmetric(
+                                                      vertical: 60,
+                                                      horizontal: 30),
+                                              child: SvgPicture.asset(
+                                                "assets/square.svg",
+                                                semanticsLabel: "Squareでお支払い",
+                                                width: 80,
+                                                height: 80,
+                                                theme: const SvgTheme(
+                                                    currentColor: Colors.black),
+                                              ))),
+                                    ),
                                   ),
-                                ),
-                                onPressed: () {
-                                  if (enableSquare == false) {
-                                    openTerminal();
-                                  } else {
-                                    _openSquareReaderPayment();
-                                  }
-                                },
-                                child: Padding(
-                                    padding: const EdgeInsets.symmetric(
-                                        vertical: 60, horizontal: 30),
-                                    child: SvgPicture.asset(
-                                      "assets/square.svg",
-                                      semanticsLabel: "Squareでお支払い",
-                                      width: 150,
-                                      height: 150,
-                                      theme: const SvgTheme(
-                                          currentColor: Colors.black),
-                                    ))),
-                          ),
-                        ))
+                                ]),
+                            Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                children: [
+                                  Padding(
+                                    padding: const EdgeInsets.all(20),
+                                    child: Center(
+                                      child: ElevatedButton(
+                                          style: ElevatedButton.styleFrom(
+                                            shape: RoundedRectangleBorder(
+                                              borderRadius:
+                                                  BorderRadius.circular(20),
+                                            ),
+                                          ),
+                                          onPressed: () {
+                                            completePayment(
+                                                getTotal(), "circle_pay", "");
+                                          },
+                                          child: const Padding(
+                                              padding: EdgeInsets.symmetric(
+                                                  vertical: 60, horizontal: 30),
+                                              child: Icon(
+                                                Icons.qr_code_scanner_sharp,
+                                                size: 100,
+                                                color: Colors.black,
+                                              ))),
+                                    ),
+                                  )
+                                ])
+                          ]),
+                    )
                   ],
                 ),
                 SizedBox(
