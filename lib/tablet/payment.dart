@@ -138,6 +138,7 @@ class _PaymentState extends State<Payment> {
         MaterialPageRoute(
             builder: (context) => ResultPage(
                   currentOrderId: currentOrderId,
+                  price: getTotal() - deposit,
                 )));
   }
 
@@ -481,6 +482,9 @@ class _PaymentState extends State<Payment> {
                                 },
                               ),
                               const SizedBox(height: 40),
+                              Text("お釣り: ${deposit - getTotal()}円",
+                                  style: const TextStyle(fontSize: 24)),
+                              const SizedBox(height: 40),
                               SizedBox(
                                 height: 60,
                                 width: double.infinity,
@@ -501,6 +505,30 @@ class _PaymentState extends State<Payment> {
                             ],
                           )),
                     ),
+                    Expanded(
+                        flex: 3,
+                        child: Padding(
+                          padding: const EdgeInsets.all(20),
+                          child: Center(
+                            child: ElevatedButton(
+                                style: ElevatedButton.styleFrom(
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(20),
+                                  ),
+                                ),
+                                onPressed: () {
+                                  completePayment(getTotal(), "airpay", "");
+                                },
+                                child: Padding(
+                                    padding: const EdgeInsets.symmetric(
+                                        vertical: 60, horizontal: 30),
+                                    child: Image.asset(
+                                      "assets/air_logo.png",
+                                      width: 150,
+                                      height: 150,
+                                    ))),
+                          ),
+                        )),
                     Expanded(
                         flex: 3,
                         child: Padding(

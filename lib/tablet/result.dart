@@ -7,7 +7,9 @@ import 'package:sunmi_printer_plus/sunmi_printer_plus.dart';
 class ResultPage extends StatefulWidget {
   final String? transactionId;
   final String? currentOrderId;
-  const ResultPage({Key? key, this.transactionId, this.currentOrderId})
+  final num? price;
+  const ResultPage(
+      {Key? key, this.transactionId, this.currentOrderId, this.price})
       : super(key: key);
 
   @override
@@ -17,6 +19,7 @@ class ResultPage extends StatefulWidget {
 class _ResultState extends State<ResultPage> {
   String? transactionId;
   String? currentOrderId;
+  num? price;
 
   Future<void> completeOrder() async {
     final FirebaseFirestore firestore = FirebaseFirestore.instance;
@@ -58,6 +61,7 @@ class _ResultState extends State<ResultPage> {
     super.initState();
     transactionId = widget.transactionId;
     currentOrderId = widget.currentOrderId;
+    price = widget.price;
     getSettings(key: "enableLCD").then((value) {
       if (value == true) {
         startLCD();
@@ -96,6 +100,13 @@ class _ResultState extends State<ResultPage> {
                       ),
                     )
                   : Container(),
+              Text(
+                'お釣り：${price ?? 0}円',
+                style: const TextStyle(
+                  fontSize: 24,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
               SizedBox(
                   height: 60,
                   width: MediaQuery.of(context).size.width * 0.4,
