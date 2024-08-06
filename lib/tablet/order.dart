@@ -1,7 +1,4 @@
-import 'dart:convert';
-import 'dart:io';
-
-import 'package:device_info_plus/device_info_plus.dart';
+import 'package:ez_pos_system_app/tablet/pairing.dart';
 import 'package:ez_pos_system_app/tablet/settings.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -10,11 +7,10 @@ import 'package:cached_network_image/cached_network_image.dart';
 import 'package:ez_pos_system_app/tablet/payment.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 import 'package:audioplayers/audioplayers.dart';
-import 'package:qr_flutter/qr_flutter.dart';
-import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:sunmi_printer_plus/sunmi_printer_plus.dart';
+import 'package:device_info_plus/device_info_plus.dart';
+import 'dart:io';
 
 class OrderPage extends StatefulWidget {
   const OrderPage({Key? key}) : super(key: key);
@@ -24,7 +20,6 @@ class OrderPage extends StatefulWidget {
 }
 
 class _OrderState extends State<OrderPage> {
-  String kuttLink = '';
   List<Map<String, dynamic>> items = [];
   List<Image> images = [];
   List<Map<String, dynamic>> orders = [];
@@ -32,7 +27,6 @@ class _OrderState extends State<OrderPage> {
   final FirebaseStorage storage = FirebaseStorage.instance;
   final player = AudioPlayer();
   String currentOrderId = '';
-  Future<String> _deviceId = Future.value('');
   MobileScannerController controller = MobileScannerController(
       facing: CameraFacing.back,
       detectionTimeoutMs: 1500,
@@ -61,21 +55,6 @@ class _OrderState extends State<OrderPage> {
     return img;
   }
 
-  Future<String> getDeviceUniqueId() async {
-    var deviceIdentifier = 'unknown';
-    var deviceInfo = DeviceInfoPlugin();
-
-    if (Platform.isAndroid) {
-      var androidInfo = await deviceInfo.androidInfo;
-      deviceIdentifier = androidInfo.id;
-    } else if (Platform.isIOS) {
-      var iosInfo = await deviceInfo.iosInfo;
-      deviceIdentifier = iosInfo.identifierForVendor!;
-    }
-
-    return deviceIdentifier;
-  }
-
   num getQuantity() {
     num quantity = 0;
     for (final Map<String, dynamic> order in orders) {
@@ -90,6 +69,21 @@ class _OrderState extends State<OrderPage> {
       total += order['price'] * order['quantity'];
     }
     return total;
+  }
+
+  Future<String> getDeviceUniqueId() async {
+    var deviceIdentifier = 'unknown';
+    var deviceInfo = DeviceInfoPlugin();
+
+    if (Platform.isAndroid) {
+      var androidInfo = await deviceInfo.androidInfo;
+      deviceIdentifier = androidInfo.id;
+    } else if (Platform.isIOS) {
+      var iosInfo = await deviceInfo.iosInfo;
+      deviceIdentifier = iosInfo.identifierForVendor!;
+    }
+
+    return deviceIdentifier;
   }
 
   Future<void> addToOrder(int index) async {
@@ -167,46 +161,6 @@ class _OrderState extends State<OrderPage> {
     await controller.stop().whenComplete(() => controller.start());
   }
 
-  Future<void> createShortenLink() async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    Uri url = Uri.parse("https://${dotenv.env["KUTT_DOMAIN"]}/api/v2/links");
-    Map<String, String> headers = {
-      "X-API-KEY": dotenv.env["KUTT_APIKEY"]!,
-      "Content-Type": "application/json"
-    };
-    String body = jsonEncode({
-      'target':
-          "https://${dotenv.env["EZ_POS_WEB_DOMAIN"]}/?color=black&deviceId=${await getDeviceUniqueId()}",
-      'expire_in': "10 hours",
-    });
-    http.Response response = await http.post(url, headers: headers, body: body);
-    if (response.statusCode == 201) {
-      Map<String, dynamic> data = jsonDecode(response.body);
-      prefs.setString("kuttLink", data['link']);
-      setState(() {
-        kuttLink = data['link'];
-      });
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('短縮URLを作成できませんでした'),
-        ),
-      );
-    }
-  }
-
-  Future<void> getShortenLink() async {
-    final SharedPreferences prefs = await SharedPreferences.getInstance();
-    String? kuttLink = prefs.getString("kuttLink");
-    if (kuttLink == null) {
-      createShortenLink();
-    } else {
-      setState(() {
-        this.kuttLink = kuttLink;
-      });
-    }
-  }
-
   Future<bool?> getSettings({String key = ""}) async {
     SharedPreferences prefs = await SharedPreferences.getInstance();
     return prefs.getBool(key);
@@ -227,10 +181,8 @@ class _OrderState extends State<OrderPage> {
   void initState() {
     super.initState();
     resumeCamera();
-    _deviceId = getDeviceUniqueId();
     getItems();
     getCurrentOrder();
-    getShortenLink();
     getSettings(key: "enableLCD").then((value) {
       if (value ?? false) {
         startLCD();
@@ -258,7 +210,13 @@ class _OrderState extends State<OrderPage> {
                 crossAxisCount: 3,
                 children: List.generate(items.length, (int index) {
                   return Card(
-                      clipBehavior: Clip.hardEdge,
+                      elevation: 0,
+                      shape: BeveledRectangleBorder(
+                        side: BorderSide(
+                          color: Colors.black,
+                          width: 2.0,
+                        ),
+                      ),
                       child: InkWell(
                         onTap: () {
                           addToOrder(index);
@@ -273,13 +231,18 @@ class _OrderState extends State<OrderPage> {
                                         items[index]['thumbnail'] != ''
                                     ? Expanded(child: images[index])
                                     : Container(),
+                                const SizedBox(height: 10),
                                 Text(
                                   items[index]['name'],
-                                  style: const TextStyle(fontSize: 16),
+                                  style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold),
                                 ),
                                 Text(
                                   "${items[index]['price'].toString()}円",
-                                  style: const TextStyle(fontSize: 16),
+                                  style: const TextStyle(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold),
                                 ),
                               ],
                             )),
@@ -338,11 +301,13 @@ class _OrderState extends State<OrderPage> {
                   ),
                   Text(
                     "点数　${getQuantity()}点",
-                    style: const TextStyle(fontSize: 25),
+                    style: const TextStyle(
+                        fontSize: 25, fontWeight: FontWeight.bold),
                   ),
                   Text(
                     "合計　${getTotal()}円",
-                    style: const TextStyle(fontSize: 25),
+                    style: const TextStyle(
+                        fontSize: 25, fontWeight: FontWeight.bold),
                   ),
                   const SizedBox(height: 50),
                   SizedBox(
@@ -352,6 +317,9 @@ class _OrderState extends State<OrderPage> {
                       style: ElevatedButton.styleFrom(
                         backgroundColor: Colors.black,
                         foregroundColor: Colors.white,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(0), // 任意の角丸さを指定
+                        ),
                       ),
                       onPressed: () {
                         if (orders.isNotEmpty) {
@@ -365,61 +333,40 @@ class _OrderState extends State<OrderPage> {
                           );
                         }
                       },
-                      child: const Text('会計', style: TextStyle(fontSize: 20)),
+                      child: const Text('会計',
+                          style: TextStyle(
+                              fontSize: 20, fontWeight: FontWeight.bold)),
                     ),
                   ),
                   const SizedBox(height: 30),
-                  FutureBuilder<String>(
-                    future: _deviceId,
-                    builder:
-                        (BuildContext context, AsyncSnapshot<String> snapshot) {
-                      if (snapshot.connectionState == ConnectionState.done) {
-                        return Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                            children: [
-                              IconButton(
-                                  icon: const Icon(Icons.refresh),
-                                  onPressed: () {
-                                    getItems();
-                                  },
-                                  tooltip: "商品を更新"),
-                              QrImageView(
-                                data: snapshot.data!,
-                                version: QrVersions.auto,
-                                size: 100.0,
-                              ),
-                              IconButton(
-                                  icon: const Icon(Icons.refresh),
-                                  onPressed: () {
-                                    createShortenLink();
-                                  },
-                                  tooltip: "URLを更新"),
-                              QrImageView(
-                                data: kuttLink,
-                                version: QrVersions.auto,
-                                eyeStyle: const QrEyeStyle(
-                                  eyeShape: QrEyeShape.square,
-                                  color: Colors.blue,
-                                ),
-                                size: 100.0,
-                              ),
-                              IconButton(
-                                  icon: const Icon(Icons.settings),
-                                  onPressed: () {
-                                    Navigator.push((context),
-                                        MaterialPageRoute(builder: (context) {
-                                      return SettingsPage();
-                                    }));
-                                  },
-                                  tooltip: "設定"),
-                            ]);
-                      }
-                      if (snapshot.connectionState == ConnectionState.waiting) {
-                        return const Text("Loading device info...");
-                      }
-                      return const Icon(Icons.error);
-                    },
-                  ),
+                  Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                      children: [
+                        IconButton(
+                            icon: const Icon(Icons.refresh),
+                            onPressed: () {
+                              getItems();
+                            },
+                            tooltip: "商品を更新"),
+                        IconButton(
+                            icon: const Icon(Icons.smartphone),
+                            onPressed: () {
+                              Navigator.push((context),
+                                  MaterialPageRoute(builder: (context) {
+                                return PairingPage();
+                              }));
+                            },
+                            tooltip: "ペアリング"),
+                        IconButton(
+                            icon: const Icon(Icons.settings),
+                            onPressed: () {
+                              Navigator.push((context),
+                                  MaterialPageRoute(builder: (context) {
+                                return SettingsPage();
+                              }));
+                            },
+                            tooltip: "設定"),
+                      ])
                 ],
               ),
             )),

@@ -81,7 +81,7 @@ class _ResultState extends State<ResultPage> {
             children: [
               const Icon(
                 Icons.check_circle_outline,
-                size: 100,
+                size: 120,
                 color: Colors.green,
               ),
               const Text(
@@ -114,6 +114,12 @@ class _ResultState extends State<ResultPage> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.black,
                       foregroundColor: Colors.white,
+                      shape: const BeveledRectangleBorder(
+                        side: BorderSide(
+                          color: Colors.black,
+                          width: 2.0,
+                        ),
+                      ),
                     ),
                     onPressed: () {
                       completeOrder();
@@ -122,7 +128,9 @@ class _ResultState extends State<ResultPage> {
                           MaterialPageRoute(
                               builder: (context) => const OrderPage()));
                     },
-                    child: const Text('ホームに戻る', style: TextStyle(fontSize: 20)),
+                    child: const Text('ホームに戻る',
+                        style: TextStyle(
+                            fontSize: 20, fontWeight: FontWeight.bold)),
                   ))
             ]),
       ),

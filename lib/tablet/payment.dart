@@ -97,16 +97,18 @@ class _PaymentState extends State<Payment> {
   Future<void> completePayment(
       num deposit, String type, String transactionId) async {
     String barcode = generateRandomString(13);
-    printReceipt({
-      "deviceId": currentOrderId,
-      "items": orders,
-      "deposit": deposit,
-      "amount": getTotal(),
-      "type": type,
-      "orderedAt": FieldValue.serverTimestamp(),
-      "status": "complete",
-      "receiptId": barcode,
-    });
+    if (enablePrinter) {
+      await printReceipt({
+        "deviceId": currentOrderId,
+        "items": orders,
+        "deposit": deposit,
+        "amount": getTotal(),
+        "type": type,
+        "orderedAt": FieldValue.serverTimestamp(),
+        "status": "complete",
+        "receiptId": barcode,
+      });
+    }
     await firestore.collection("CURRENT_ORDER").doc(currentOrderId).update({
       'receiptId': barcode,
       "deposit": deposit,
@@ -138,7 +140,7 @@ class _PaymentState extends State<Payment> {
         MaterialPageRoute(
             builder: (context) => ResultPage(
                   currentOrderId: currentOrderId,
-                  price: getTotal() - deposit,
+                  price: deposit - getTotal(),
                 )));
   }
 
@@ -424,17 +426,23 @@ class _PaymentState extends State<Payment> {
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text("合計", style: TextStyle(fontSize: 24)),
+                            const Text("合計",
+                                style: TextStyle(
+                                    fontSize: 28, fontWeight: FontWeight.bold)),
                             Text("${getTotal().toString()}円",
-                                style: const TextStyle(fontSize: 24)),
+                                style: const TextStyle(
+                                    fontSize: 28, fontWeight: FontWeight.bold)),
                           ],
                         ),
                         Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
-                            const Text("点数", style: TextStyle(fontSize: 24)),
+                            const Text("点数",
+                                style: TextStyle(
+                                    fontSize: 28, fontWeight: FontWeight.bold)),
                             Text("${getQuantity().toString()}点",
-                                style: const TextStyle(fontSize: 24)),
+                                style: const TextStyle(
+                                    fontSize: 28, fontWeight: FontWeight.bold)),
                           ],
                         )
                       ],
@@ -449,17 +457,23 @@ class _PaymentState extends State<Payment> {
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
-                              const Text("現金", style: TextStyle(fontSize: 24)),
+                              const Text("現金",
+                                  style: TextStyle(
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.bold)),
                               const SizedBox(height: 40),
                               TextField(
                                 decoration: InputDecoration(
-                                    border: const OutlineInputBorder(),
+                                    border: const OutlineInputBorder(
+                                        borderSide:
+                                            BorderSide(color: Colors.black),
+                                        borderRadius: BorderRadius.zero),
                                     labelText: "金額",
                                     errorText: depositError,
                                     suffixText: "円"),
                                 keyboardType: TextInputType.number,
                                 onChanged: (String value) {
-                                  if (value == "") {
+                                  if (value == "" || value == "0") {
                                     setState(() {
                                       depositError = "金額を入力してください";
                                     });
@@ -483,7 +497,12 @@ class _PaymentState extends State<Payment> {
                               ),
                               const SizedBox(height: 40),
                               Text("お釣り: ${deposit - getTotal()}円",
-                                  style: const TextStyle(fontSize: 24)),
+                                  style: TextStyle(
+                                      fontSize: 24,
+                                      fontWeight: FontWeight.bold,
+                                      color: deposit - getTotal() < 0
+                                          ? Colors.red
+                                          : Colors.black)),
                               const SizedBox(height: 40),
                               SizedBox(
                                 height: 60,
@@ -492,15 +511,27 @@ class _PaymentState extends State<Payment> {
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: Colors.black,
                                       foregroundColor: Colors.white,
+                                      shape: RoundedRectangleBorder(
+                                        borderRadius: BorderRadius.circular(
+                                            0), // 任意の角丸さを指定
+                                      ),
                                     ),
                                     onPressed: () {
+                                      if (deposit == 0) {
+                                        setState(() {
+                                          depositError = "金額を入力してください";
+                                        });
+                                        return;
+                                      }
                                       if (depositError != null) {
                                         return;
                                       }
                                       completePayment(deposit, "cash", "");
                                     },
                                     child: const Text("支払い",
-                                        style: TextStyle(fontSize: 20))),
+                                        style: TextStyle(
+                                            fontSize: 20,
+                                            fontWeight: FontWeight.bold))),
                               )
                             ],
                           )),
@@ -519,9 +550,12 @@ class _PaymentState extends State<Payment> {
                                     child: Center(
                                       child: ElevatedButton(
                                           style: ElevatedButton.styleFrom(
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(20),
+                                            elevation: 0,
+                                            shape: const BeveledRectangleBorder(
+                                              side: BorderSide(
+                                                color: Colors.black,
+                                                width: 2.0,
+                                              ),
                                             ),
                                           ),
                                           onPressed: () {
@@ -545,9 +579,12 @@ class _PaymentState extends State<Payment> {
                                     child: Center(
                                       child: ElevatedButton(
                                           style: ElevatedButton.styleFrom(
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(20),
+                                            elevation: 0,
+                                            shape: const BeveledRectangleBorder(
+                                              side: BorderSide(
+                                                color: Colors.black,
+                                                width: 2.0,
+                                              ),
                                             ),
                                           ),
                                           onPressed: () {
@@ -581,9 +618,12 @@ class _PaymentState extends State<Payment> {
                                     child: Center(
                                       child: ElevatedButton(
                                           style: ElevatedButton.styleFrom(
-                                            shape: RoundedRectangleBorder(
-                                              borderRadius:
-                                                  BorderRadius.circular(20),
+                                            elevation: 0,
+                                            shape: const BeveledRectangleBorder(
+                                              side: BorderSide(
+                                                color: Colors.black,
+                                                width: 2.0,
+                                              ),
                                             ),
                                           ),
                                           onPressed: () {
@@ -612,8 +652,13 @@ class _PaymentState extends State<Payment> {
                     style: ElevatedButton.styleFrom(
                       backgroundColor: Colors.black,
                       foregroundColor: Colors.white,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(0), // 任意の角丸さを指定
+                      ),
                     ),
-                    child: const Text("戻る", style: TextStyle(fontSize: 20)),
+                    child: const Text("戻る",
+                        style: TextStyle(
+                            fontSize: 20, fontWeight: FontWeight.bold)),
                     onPressed: () {
                       cancelPayment();
                     },

@@ -1,3 +1,4 @@
+import 'package:ez_pos_system_app/tablet/illust.dart';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
@@ -76,6 +77,12 @@ class _SettingsPageState extends State<SettingsPage> {
             });
           },
         ),
+        ElevatedButton(
+            onPressed: () {
+              Navigator.push(context,
+                  MaterialPageRoute(builder: (context) => IllustPage()));
+            },
+            child: const Text("おまけ"))
       ]),
     );
   }
