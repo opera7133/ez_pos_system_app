@@ -85,7 +85,7 @@ class _SettingsPageState extends State<SettingsPage> {
         ),
         SwitchListTile(
           title: const Text('ドロワー'),
-          value: enableLCD,
+          value: enableDrawer,
           onChanged: (bool value) async {
             SharedPreferences prefs = await SharedPreferences.getInstance();
             prefs.setBool("enableDrawer", value);
