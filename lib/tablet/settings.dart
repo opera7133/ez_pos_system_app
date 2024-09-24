@@ -11,6 +11,7 @@ class _SettingsPageState extends State<SettingsPage> {
   bool enableSquare = false;
   bool enablePrinter = false;
   bool enableLCD = false;
+  bool enableDrawer = false;
 
   @override
   void initState() {
@@ -28,6 +29,11 @@ class _SettingsPageState extends State<SettingsPage> {
     getSettings(key: "enableLCD").then((value) {
       setState(() {
         enableLCD = value ?? false;
+      });
+    });
+    getSettings(key: "enableDrawer").then((value) {
+      setState(() {
+        enableDrawer = value ?? false;
       });
     });
   }
@@ -74,6 +80,17 @@ class _SettingsPageState extends State<SettingsPage> {
             prefs.setBool("enableLCD", value);
             setState(() {
               enableLCD = value;
+            });
+          },
+        ),
+        SwitchListTile(
+          title: const Text('ドロワー'),
+          value: enableLCD,
+          onChanged: (bool value) async {
+            SharedPreferences prefs = await SharedPreferences.getInstance();
+            prefs.setBool("enableDrawer", value);
+            setState(() {
+              enableDrawer = value;
             });
           },
         ),

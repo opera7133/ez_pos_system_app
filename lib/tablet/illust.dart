@@ -75,6 +75,11 @@ class _IllustPageState extends State<IllustPage> {
               },
               child: Text('カメラで撮影'),
             ),
+            ElevatedButton(
+                onPressed: () async {
+                  await SunmiPrinter.openDrawer();
+                },
+                child: Text('ドロワーを開く'))
           ],
         ),
       ),

@@ -56,6 +56,10 @@ class _ResultState extends State<ResultPage> {
     await SunmiPrinter.lcdDoubleString("お釣り  $price円", "ご購入感謝！");
   }
 
+  Future<void> openDrawer() async {
+    await SunmiPrinter.openDrawer();
+  }
+
   @override
   void initState() {
     super.initState();
@@ -66,6 +70,11 @@ class _ResultState extends State<ResultPage> {
       if (value == true) {
         startLCD();
         displayLCD();
+      }
+    });
+    getSettings(key: "enableDrawer").then((value) {
+      if (value == true) {
+        openDrawer();
       }
     });
   }
