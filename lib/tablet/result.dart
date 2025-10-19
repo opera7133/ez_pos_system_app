@@ -1,6 +1,7 @@
+import 'package:ez_pos_system_app/utils/database.dart';
+import 'package:ez_pos_system_app/utils/model.dart' as md;
 import 'package:flutter/material.dart';
 import 'package:ez_pos_system_app/tablet/order.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sunmi_printer_plus/sunmi_printer_plus.dart';
 
@@ -22,8 +23,10 @@ class _ResultState extends State<ResultPage> {
   num? price;
 
   Future<void> completeOrder() async {
-    final FirebaseFirestore firestore = FirebaseFirestore.instance;
-    await firestore.collection('CURRENT_ORDER').doc(currentOrderId).delete();
+    final Database database = Database();
+    if (currentOrderId != null) {
+      await database.currentOrderCollection().delete(currentOrderId!);
+    }
   }
 
   Future<bool?> getSettings({String key = ""}) async {
@@ -32,32 +35,29 @@ class _ResultState extends State<ResultPage> {
   }
 
   Future<void> startLCD() async {
-    await SunmiPrinter.lcdInitialize();
-    await SunmiPrinter.lcdWakeup();
-    await SunmiPrinter.lcdClear();
+    await SunmiLcd.configLCD(status: SunmiLCDStatus.WAKE);
+    await SunmiLcd.configLCD(status: SunmiLCDStatus.CLEAR);
   }
 
   num getTotal(dynamic items) {
     num total = 0;
-    for (final Map<String, dynamic> item in items) {
-      total += item['price'] * item['quantity'];
+    for (final md.OrderItem item in items) {
+      total += item.price * item.quantity;
     }
     return total;
   }
 
   Future<void> displayLCD() async {
-    final FirebaseFirestore firestore = FirebaseFirestore.instance;
-    final DocumentSnapshot documentSnapshot =
-        await firestore.collection('CURRENT_ORDER').doc(currentOrderId).get();
-    final Map<String, dynamic> data =
-        documentSnapshot.data() as Map<String, dynamic>;
-    final List<dynamic> items = data['items'];
-    final num price = data['deposit'] - getTotal(items);
-    await SunmiPrinter.lcdDoubleString("お釣り  $price円", "ご購入感謝！");
+    final Database database = Database();
+    final md.Order? order =
+        await database.currentOrderCollection().findById(currentOrderId!);
+    if (order == null) return;
+    final num price = (order.deposit ?? 0) - getTotal(order.items);
+    await SunmiLcd.lcdString("お釣り  $price円\nご購入感謝！", size: 12, fill: false);
   }
 
   Future<void> openDrawer() async {
-    await SunmiPrinter.openDrawer();
+    await SunmiDrawer.openDrawer();
   }
 
   @override

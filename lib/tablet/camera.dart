@@ -3,8 +3,6 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:sunmi_printer_plus/sunmi_printer_plus.dart';
-import 'package:sunmi_printer_plus/enums.dart';
-import 'package:image/image.dart' as im;
 
 class CameraPage extends StatefulWidget {
   @override
@@ -15,27 +13,9 @@ class _CameraPageState extends State<CameraPage> {
   late CameraController _controller;
   late Future<void> _initializeControllerFuture;
 
-  Future<void> bindPrinter() async {
-    final bool? res = await SunmiPrinter.bindingPrinter();
-    if (res != null && res) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('プリンターに接続しました'),
-        ),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('プリンターに接続できませんでした'),
-        ),
-      );
-    }
-  }
-
   @override
   void initState() {
     super.initState();
-    bindPrinter();
     _initializeControllerFuture = _initializeController();
   }
 
@@ -80,15 +60,10 @@ class _CameraPageState extends State<CameraPage> {
         onPressed: () async {
           final XFile file = await _controller.takePicture();
           final Uint8List bytes = await file.readAsBytes();
-          await SunmiPrinter.initPrinter();
-          await SunmiPrinter.startTransactionPrint();
-          await SunmiPrinter.setAlignment(SunmiPrintAlign.CENTER);
           await SunmiPrinter.lineWrap(2);
-          await SunmiPrinter.printImage(bytes);
+          await SunmiPrinter.printImage(bytes, align: SunmiPrintAlign.CENTER);
           await SunmiPrinter.lineWrap(4);
-          await SunmiPrinter.submitTransactionPrint();
-          await SunmiPrinter.cut();
-          await SunmiPrinter.exitTransactionPrint();
+          await SunmiPrinter.cutPaper();
         },
       ),
     );

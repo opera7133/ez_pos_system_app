@@ -11,21 +11,17 @@ class InputPage extends StatefulWidget {
 }
 
 class _InputPageState extends State<InputPage> {
-  MobileScannerController mbcontroller = MobileScannerController(
+  final MobileScannerController mbcontroller = MobileScannerController(
+      autoStart: true,
       facing: CameraFacing.back,
       detectionTimeoutMs: 1500,
       detectionSpeed: DetectionSpeed.normal);
   String deviceId = "";
   TextEditingController controller = TextEditingController();
 
-  Future<void> resumeCamera() async {
-    await mbcontroller.stop().whenComplete(() => mbcontroller.start());
-  }
-
   @override
   void initState() {
     super.initState();
-    resumeCamera();
   }
 
   @override

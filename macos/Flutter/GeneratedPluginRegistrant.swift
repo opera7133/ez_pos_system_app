@@ -14,7 +14,7 @@ import firebase_storage
 import mobile_scanner
 import path_provider_foundation
 import shared_preferences_foundation
-import sqflite
+import sqflite_darwin
 
 func RegisterGeneratedPlugins(registry: FlutterPluginRegistry) {
   AudioplayersDarwinPlugin.register(with: registry.registrar(forPlugin: "AudioplayersDarwinPlugin"))

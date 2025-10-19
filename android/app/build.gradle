@@ -1,6 +1,7 @@
 plugins {
     id "com.android.application"
     id "kotlin-android"
+    id "org.jetbrains.kotlin.plugin.compose"
     id "dev.flutter.flutter-gradle-plugin"
 }
 
@@ -23,13 +24,17 @@ if (flutterVersionName == null) {
 }
 
 android {
-    namespace "com.example.ez_pos_system_app"
+    namespace "com.wmsci.ez_pos_system_app"
     compileSdkVersion flutter.compileSdkVersion
     ndkVersion flutter.ndkVersion
 
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
+    }
+
+    composeOptions {
+        kotlinCompilerExtensionVersion = "1.5.15"
     }
 
     kotlinOptions {
@@ -42,11 +47,11 @@ android {
 
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
-        applicationId "com.example.ez_pos_system_app"
+        applicationId "com.wmsci.ez_pos_system_app"
         // You can update the following values to match your application needs.
         // For more information, see: https://docs.flutter.dev/deployment/android#reviewing-the-gradle-build-configuration.
         minSdkVersion 24
-        compileSdkVersion 34
+        compileSdkVersion 36
         targetSdkVersion flutter.targetSdkVersion
         versionCode flutterVersionCode.toInteger()
         versionName flutterVersionName
@@ -66,5 +71,7 @@ flutter {
 }
 
 dependencies {
+    implementation "androidx.activity:activity-compose:1.5.15"
     implementation 'com.squareup.sdk:point-of-sale-sdk:2.+'
+    implementation 'com.google.mlkit:barcode-scanning:17.3.0'
 }

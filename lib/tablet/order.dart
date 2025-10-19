@@ -1,11 +1,13 @@
 import 'package:ez_pos_system_app/tablet/pairing.dart';
 import 'package:ez_pos_system_app/tablet/settings.dart';
+import 'package:ez_pos_system_app/utils/database.dart';
+import 'package:ez_pos_system_app/utils/model.dart' as md;
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:ez_pos_system_app/tablet/payment.dart';
-import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:ez_pos_system_app/tablet/wait.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sunmi_printer_plus/sunmi_printer_plus.dart';
@@ -20,29 +22,24 @@ class OrderPage extends StatefulWidget {
 }
 
 class _OrderState extends State<OrderPage> {
-  List<Map<String, dynamic>> items = [];
+  List<md.Item> items = [];
   List<Image> images = [];
-  List<Map<String, dynamic>> orders = [];
-  final FirebaseFirestore firestore = FirebaseFirestore.instance;
+  List<md.OrderItem> orders = [];
+  final Database database = Database();
   final FirebaseStorage storage = FirebaseStorage.instance;
   final player = AudioPlayer();
   String currentOrderId = '';
-  MobileScannerController controller = MobileScannerController(
-      facing: CameraFacing.back,
-      detectionTimeoutMs: 1500,
-      detectionSpeed: DetectionSpeed.normal);
 
   Future<void> getItems() async {
     setState(() {
       this.items = [];
       images = [];
     });
-    final QuerySnapshot<Map<String, dynamic>> items =
-        await firestore.collection('ITEMS').get();
-    for (final QueryDocumentSnapshot<Map<String, dynamic>> item in items.docs) {
-      Image img = await _downloadImage(item.data()['thumbnail']);
+    final List<md.Item> items = await database.itemsCollection().all();
+    for (final md.Item item in items) {
+      Image img = await _downloadImage(item.thumbnail);
       setState(() {
-        this.items.add(item.data());
+        this.items.add(item);
         images.add(img);
       });
     }
@@ -57,16 +54,16 @@ class _OrderState extends State<OrderPage> {
 
   num getQuantity() {
     num quantity = 0;
-    for (final Map<String, dynamic> order in orders) {
-      quantity += order['quantity'];
+    for (final md.OrderItem order in orders) {
+      quantity += order.quantity;
     }
     return quantity;
   }
 
   num getTotal() {
     num total = 0;
-    for (final Map<String, dynamic> order in orders) {
-      total += order['price'] * order['quantity'];
+    for (final md.OrderItem order in orders) {
+      total += order.price * order.quantity;
     }
     return total;
   }
@@ -87,36 +84,38 @@ class _OrderState extends State<OrderPage> {
   }
 
   Future<void> addToOrder(int index) async {
-    await displayLCD(items[index]['name'], items[index]['price']);
-    if (orders.any((element) => element['itemId'] == items[index]['itemId'])) {
-      final int orderIndex = orders
-          .indexWhere((element) => element['itemId'] == items[index]['itemId']);
+    await displayLCD(items[index].name, items[index].price);
+    if (orders.any((element) => element.itemId == items[index].itemId)) {
+      final int orderIndex =
+          orders.indexWhere((element) => element.itemId == items[index].itemId);
       setState(() {
-        orders[orderIndex]['quantity'] += 1;
+        orders[orderIndex].quantity += 1;
       });
-      await firestore
-          .collection('CURRENT_ORDER')
-          .doc(currentOrderId)
-          .update({'items': orders});
+      await database.currentOrderCollection().update(
+          currentOrderId, {'items': orders.map((e) => e.toMap()).toList()});
       return;
     }
     setState(() {
-      orders.add({
-        ...items[index],
-        'quantity': 1,
-      });
+      orders.add(md.OrderItem(
+        isdn: items[index].isdn,
+        itemId: items[index].itemId,
+        name: items[index].name,
+        price: items[index].price,
+        thumbnail: items[index].thumbnail,
+        quantity: 1,
+      ));
     });
-    await firestore.collection('CURRENT_ORDER').doc(currentOrderId).update({
-      'items': orders,
+    await database.currentOrderCollection().update(currentOrderId, {
+      'items': orders.map((e) => e.toMap()).toList(),
     });
   }
 
   Future<void> updateOrder(int index, int quantity) async {
     setState(() {
-      orders[index]['quantity'] = quantity;
+      orders[index].quantity = quantity;
     });
-    await firestore.collection('CURRENT_ORDER').doc(currentOrderId).update({
-      'items': orders,
+    await database.currentOrderCollection().update(currentOrderId, {
+      'items': orders.map((e) => e.toMap()).toList(),
     });
   }
 
@@ -124,41 +123,40 @@ class _OrderState extends State<OrderPage> {
     setState(() {
       orders.removeAt(index);
     });
-    await firestore.collection('CURRENT_ORDER').doc(currentOrderId).update({
-      'items': orders,
+    await database.currentOrderCollection().update(currentOrderId, {
+      'items': orders.map((e) => e.toMap()).toList(),
     });
-    await SunmiPrinter.lcdClear();
-  }
-
-  Future<void> getCurrentOrder() async {
-    final QuerySnapshot<Map<String, dynamic>> currentOrder = await firestore
-        .collection('CURRENT_ORDER')
-        .where("deviceId", isEqualTo: await getDeviceUniqueId())
-        .get();
-    if (currentOrder.docs.isNotEmpty) {
-      List<Map<String, dynamic>> order =
-          List<Map<String, dynamic>>.from(currentOrder.docs.first['items']);
-      setState(() {
-        currentOrderId = currentOrder.docs.first.id;
-        orders = order;
-      });
-    } else {
-      final newDoc = firestore.collection('CURRENT_ORDER').doc();
-
-      await newDoc.set({
-        'deviceId': await getDeviceUniqueId(),
-        'items': [],
-        'orderId': newDoc.id,
-        'createdAt': FieldValue.serverTimestamp(),
-      });
-      setState(() {
-        currentOrderId = newDoc.id;
-      });
+    if (await getSettings(key: "enableLCD") ?? false) {
+      await SunmiLcd.configLCD(status: SunmiLCDStatus.CLEAR);
     }
   }
 
-  Future<void> resumeCamera() async {
-    await controller.stop().whenComplete(() => controller.start());
+  Future<void> getCurrentOrder() async {
+    final List<md.Order?> currentOrder = await database
+        .currentOrderCollection()
+        .getByQuery({
+      'type': 'isEqualTo',
+      'field': 'deviceId',
+      'value': await getDeviceUniqueId()
+    });
+    if (currentOrder.isNotEmpty) {
+      setState(() {
+        currentOrderId = currentOrder.first!.orderId!;
+        orders = currentOrder.first!.items;
+      });
+    } else {
+      final newDoc = database.currentOrderCollection().getId();
+
+      await database.currentOrderCollection().set(newDoc, {
+        'deviceId': await getDeviceUniqueId(),
+        'items': [],
+        'orderId': newDoc,
+        'createdAt': FieldValue.serverTimestamp(),
+      });
+      setState(() {
+        currentOrderId = newDoc;
+      });
+    }
   }
 
   Future<bool?> getSettings({String key = ""}) async {
@@ -167,20 +165,20 @@ class _OrderState extends State<OrderPage> {
   }
 
   Future<void> startLCD() async {
-    await SunmiPrinter.bindingPrinter();
-    await SunmiPrinter.lcdInitialize();
-    await SunmiPrinter.lcdWakeup();
-    await SunmiPrinter.lcdClear();
+    await SunmiLcd.configLCD(status: SunmiLCDStatus.WAKE);
+    await SunmiLcd.configLCD(status: SunmiLCDStatus.CLEAR);
   }
 
   Future<void> displayLCD(String itemName, num price) async {
-    await SunmiPrinter.lcdDoubleString(itemName, "$price円");
+    if (!(await getSettings(key: "enableLCD") ?? false)) {
+      return;
+    }
+    await SunmiLcd.lcdString("$itemName\n$price円", size: 12, fill: false);
   }
 
   @override
   void initState() {
     super.initState();
-    resumeCamera();
     getItems();
     getCurrentOrder();
     getSettings(key: "enableLCD").then((value) {
@@ -193,7 +191,6 @@ class _OrderState extends State<OrderPage> {
   @override
   void dispose() {
     player.dispose();
-    controller.dispose();
     super.dispose();
   }
 
@@ -227,19 +224,18 @@ class _OrderState extends State<OrderPage> {
                               mainAxisAlignment: MainAxisAlignment.center,
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                items[index].containsKey("thumbnail") &&
-                                        items[index]['thumbnail'] != ''
+                                items[index].thumbnail != ''
                                     ? Expanded(child: images[index])
                                     : Container(),
                                 const SizedBox(height: 10),
                                 Text(
-                                  items[index]['name'],
+                                  items[index].name,
                                   style: const TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold),
                                 ),
                                 Text(
-                                  "${items[index]['price'].toString()}円",
+                                  "${items[index].price.toString()}円",
                                   style: const TextStyle(
                                       fontSize: 16,
                                       fontWeight: FontWeight.bold),
@@ -262,9 +258,9 @@ class _OrderState extends State<OrderPage> {
                       itemCount: orders.length,
                       itemBuilder: (BuildContext context, int index) {
                         return ListTile(
-                          title: Text(orders[index]['name']),
+                          title: Text(orders[index].name),
                           subtitle: Text(
-                              '${orders[index]['price']} x ${orders[index]['quantity']} = ${orders[index]['price'] * orders[index]['quantity']}'),
+                              '${orders[index].price} x ${orders[index].quantity} = ${orders[index].price * orders[index].quantity}'),
                           trailing: SizedBox(
                               width: 150,
                               child: Row(
@@ -272,9 +268,9 @@ class _OrderState extends State<OrderPage> {
                                   IconButton(
                                     icon: const Icon(Icons.remove),
                                     onPressed: () {
-                                      if (orders[index]['quantity'] > 1) {
-                                        updateOrder(index,
-                                            orders[index]['quantity'] - 1);
+                                      if (orders[index].quantity > 1) {
+                                        updateOrder(
+                                            index, orders[index].quantity - 1);
                                       } else {
                                         deleteOrder(index);
                                       }
@@ -284,7 +280,7 @@ class _OrderState extends State<OrderPage> {
                                     icon: const Icon(Icons.add),
                                     onPressed: () {
                                       updateOrder(
-                                          index, orders[index]['quantity'] + 1);
+                                          index, orders[index].quantity + 1);
                                     },
                                   ),
                                   IconButton(
@@ -357,6 +353,15 @@ class _OrderState extends State<OrderPage> {
                               }));
                             },
                             tooltip: "ペアリング"),
+                        IconButton(
+                            icon: const Icon(Icons.receipt),
+                            onPressed: () {
+                              Navigator.push((context),
+                                  MaterialPageRoute(builder: (context) {
+                                return WaitScreen();
+                              }));
+                            },
+                            tooltip: "順番受付"),
                         IconButton(
                             icon: const Icon(Icons.settings),
                             onPressed: () {

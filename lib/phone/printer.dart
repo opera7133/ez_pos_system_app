@@ -1,10 +1,8 @@
+import 'package:ez_pos_system_app/utils/database.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
-import 'package:sunmi_printer_plus/column_maker.dart';
-import 'package:sunmi_printer_plus/enums.dart';
 import 'package:sunmi_printer_plus/sunmi_printer_plus.dart';
-import 'package:sunmi_printer_plus/sunmi_style.dart';
 
 class Printer extends StatefulWidget {
   final String deviceId;
@@ -15,7 +13,7 @@ class Printer extends StatefulWidget {
 }
 
 class _PrinterState extends State<Printer> {
-  final FirebaseFirestore firestore = FirebaseFirestore.instance;
+  final Database database = Database();
   Map<String, dynamic> order = {};
   String deviceId = "";
   String currentOrderId = "";
@@ -45,131 +43,131 @@ class _PrinterState extends State<Printer> {
   }
 
   Future<void> printReceipt() async {
-    await SunmiPrinter.initPrinter();
-    await SunmiPrinter.startTransactionPrint();
-    await SunmiPrinter.setAlignment(SunmiPrintAlign.CENTER);
-    await SunmiPrinter.lineWrap(2);
+    await SunmiPrinter.lineWrap(3);
     await SunmiPrinter.printText('電通部',
-        style: SunmiStyle(fontSize: SunmiFontSize.LG));
-    await SunmiPrinter.printText('東京都品川区東大井1-10-40');
-    await SunmiPrinter.lineWrap(1);
+        style: SunmiTextStyle(fontSize: 48, align: SunmiPrintAlign.CENTER));
+    await SunmiPrinter.printText('東京都品川区東大井1-10-40',
+        style: SunmiTextStyle(align: SunmiPrintAlign.CENTER));
+    await SunmiPrinter.lineWrap(2);
     await SunmiPrinter.printText(formatter.format(DateTime.now()));
     await SunmiPrinter.printText('ID: ${order["deviceId"]}');
-    await SunmiPrinter.lineWrap(1);
-    await SunmiPrinter.setAlignment(SunmiPrintAlign.CENTER);
-    await SunmiPrinter.printText("領 収 書");
-    await SunmiPrinter.lineWrap(1);
+    await SunmiPrinter.lineWrap(2);
+    await SunmiPrinter.printText("領 収 書",
+        style: SunmiTextStyle(align: SunmiPrintAlign.CENTER));
+    await SunmiPrinter.lineWrap(2);
     await SunmiPrinter.line();
-    await SunmiPrinter.lineWrap(1);
+    await SunmiPrinter.lineWrap(2);
     for (final Map<String, dynamic> item in order["items"]) {
       if (item["quantity"] > 1) {
         await SunmiPrinter.printText(item["name"]);
         await SunmiPrinter.printRow(cols: [
-          ColumnMaker(text: '', width: 2, align: SunmiPrintAlign.LEFT),
-          ColumnMaker(
+          SunmiColumn(
+              text: '',
+              width: 2,
+              style: SunmiTextStyle(align: SunmiPrintAlign.LEFT)),
+          SunmiColumn(
               text: '¥${item["price"]}',
               width: 12,
-              align: SunmiPrintAlign.LEFT),
-          ColumnMaker(
+              style: SunmiTextStyle(align: SunmiPrintAlign.LEFT)),
+          SunmiColumn(
               text: '${item["quantity"]}点',
               width: 7,
-              align: SunmiPrintAlign.LEFT),
-          ColumnMaker(
+              style: SunmiTextStyle(align: SunmiPrintAlign.LEFT)),
+          SunmiColumn(
               text: '¥${item["price"] * item["quantity"]}',
               width: 12,
-              align: SunmiPrintAlign.RIGHT)
+              style: SunmiTextStyle(align: SunmiPrintAlign.RIGHT)),
         ]);
       } else {
         await SunmiPrinter.printRow(cols: [
-          ColumnMaker(
-              text: item["name"], width: 22, align: SunmiPrintAlign.LEFT),
-          ColumnMaker(
+          SunmiColumn(
+              text: item["name"],
+              width: 22,
+              style: SunmiTextStyle(align: SunmiPrintAlign.LEFT)),
+          SunmiColumn(
               text: '¥${item["price"]}',
               width: 12,
-              align: SunmiPrintAlign.RIGHT)
+              style: SunmiTextStyle(align: SunmiPrintAlign.RIGHT))
         ]);
       }
     }
     await SunmiPrinter.lineWrap(1);
     await SunmiPrinter.printRow(cols: [
-      ColumnMaker(text: '小計', width: 10, align: SunmiPrintAlign.LEFT),
-      ColumnMaker(
-          text: "${getQuantity()}点", width: 9, align: SunmiPrintAlign.LEFT),
-      ColumnMaker(
-          text: '¥${getTotal()}', width: 14, align: SunmiPrintAlign.RIGHT)
+      SunmiColumn(
+          text: '小計',
+          width: 10,
+          style: SunmiTextStyle(align: SunmiPrintAlign.LEFT)),
+      SunmiColumn(
+          text: "${getQuantity()}点",
+          width: 9,
+          style: SunmiTextStyle(align: SunmiPrintAlign.LEFT)),
+      SunmiColumn(
+          text: '¥${getTotal()}',
+          width: 14,
+          style: SunmiTextStyle(align: SunmiPrintAlign.RIGHT))
     ]);
-    await SunmiPrinter.bold();
     await SunmiPrinter.printRow(cols: [
-      ColumnMaker(text: '合計', width: 20, align: SunmiPrintAlign.LEFT),
-      ColumnMaker(
-          text: '¥${getTotal()}', width: 14, align: SunmiPrintAlign.RIGHT)
+      SunmiColumn(
+          text: '合計',
+          width: 20,
+          style: SunmiTextStyle(align: SunmiPrintAlign.LEFT, bold: true)),
+      SunmiColumn(
+          text: '¥${getTotal()}',
+          width: 14,
+          style: SunmiTextStyle(align: SunmiPrintAlign.RIGHT, bold: true))
     ]);
-    await SunmiPrinter.resetBold();
-    await SunmiPrinter.lineWrap(1);
+    await SunmiPrinter.lineWrap(2);
     if (order["type"] == "cash") {
       await SunmiPrinter.printRow(cols: [
-        ColumnMaker(text: '現金', width: 20, align: SunmiPrintAlign.LEFT),
-        ColumnMaker(
+        SunmiColumn(
+            text: '現金',
+            width: 20,
+            style: SunmiTextStyle(align: SunmiPrintAlign.LEFT)),
+        SunmiColumn(
             text: '¥${order["deposit"]}',
             width: 14,
-            align: SunmiPrintAlign.RIGHT)
+            style: SunmiTextStyle(align: SunmiPrintAlign.RIGHT))
       ]);
     } else {
       await SunmiPrinter.printRow(cols: [
-        ColumnMaker(text: '電子決済', width: 20, align: SunmiPrintAlign.LEFT),
-        ColumnMaker(
+        SunmiColumn(
+            text: '電子決済',
+            width: 20,
+            style: SunmiTextStyle(align: SunmiPrintAlign.LEFT)),
+        SunmiColumn(
             text: '¥${order["deposit"]}',
             width: 14,
-            align: SunmiPrintAlign.RIGHT)
+            style: SunmiTextStyle(align: SunmiPrintAlign.RIGHT))
       ]);
     }
     await SunmiPrinter.printRow(cols: [
-      ColumnMaker(text: 'お釣り', width: 20, align: SunmiPrintAlign.LEFT),
-      ColumnMaker(
+      SunmiColumn(
+          text: 'お釣り',
+          width: 20,
+          style: SunmiTextStyle(align: SunmiPrintAlign.LEFT)),
+      SunmiColumn(
           text: '¥${order["deposit"] - getTotal()}',
           width: 14,
-          align: SunmiPrintAlign.RIGHT)
+          style: SunmiTextStyle(align: SunmiPrintAlign.RIGHT))
     ]);
-    await SunmiPrinter.lineWrap(1);
+    await SunmiPrinter.lineWrap(2);
     await SunmiPrinter.line();
-    await SunmiPrinter.lineWrap(1);
-    await SunmiPrinter.printBarCode(
-      order["receiptId"],
-      height: 60,
-      textPosition: SunmiBarcodeTextPos.TEXT_UNDER,
-    );
-    await SunmiPrinter.lineWrap(4);
-    await SunmiPrinter.submitTransactionPrint();
-    await SunmiPrinter.exitTransactionPrint();
-    await firestore
-        .collection("CURRENT_ORDER")
-        .doc(currentOrderId)
-        .update({"printed": true});
+    await SunmiPrinter.lineWrap(2);
+    await SunmiPrinter.printBarCode(order["receiptId"],
+        style: SunmiBarcodeStyle(
+            height: 60, textPos: SunmiBarcodeTextPos.TEXT_UNDER));
+    await SunmiPrinter.lineWrap(6);
+    await SunmiPrinter.cutPaper();
+    await database
+        .currentOrderCollection()
+        .update(currentOrderId, {"printed": true});
     processing = false;
-  }
-
-  Future<void> bindPrinter() async {
-    final bool? res = await SunmiPrinter.bindingPrinter();
-    if (res != null && res) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('プリンターに接続しました'),
-        ),
-      );
-    } else {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('プリンターに接続できませんでした'),
-        ),
-      );
-    }
   }
 
   @override
   void initState() {
     super.initState();
     getDeviceUniqueId();
-    bindPrinter();
   }
 
   @override
@@ -182,7 +180,7 @@ class _PrinterState extends State<Printer> {
           children: [
             Expanded(
                 child: StreamBuilder<QuerySnapshot>(
-                    stream: firestore.collection("CURRENT_ORDER").snapshots(),
+                    stream: database.currentOrderCollection().stream(),
                     builder: (context, snapshot) {
                       if (!processing) {
                         if (snapshot.hasData) {

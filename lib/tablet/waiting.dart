@@ -1,6 +1,8 @@
-import 'package:ez_pos_system_app/tablet/result.dart';
-import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:ez_pos_system_app/tablet/result.dart';
+import 'package:ez_pos_system_app/utils/database.dart';
+import 'package:ez_pos_system_app/utils/model.dart' as md;
+import 'package:flutter/material.dart';
 
 class Waiting extends StatefulWidget {
   final String currentOrderId;
@@ -11,28 +13,24 @@ class Waiting extends StatefulWidget {
 }
 
 class _WaitingState extends State<Waiting> {
-  final FirebaseFirestore firestore = FirebaseFirestore.instance;
+  final Database database = Database();
   String currentOrderId = "";
   bool processing = false;
 
   Future<void> cancelPayment() async {
-    await firestore
-        .collection("CURRENT_ORDER")
-        .doc(currentOrderId)
-        .update({"status": FieldValue.delete()});
+    await database
+        .currentOrderCollection()
+        .update(currentOrderId, {"status": FieldValue.delete()});
     Navigator.pop(context);
   }
 
   Future<void> completePayment() async {
-    await firestore
-        .collection("CURRENT_ORDER")
-        .doc(currentOrderId)
-        .get()
-        .then((DocumentSnapshot documentSnapshot) async {
-      if (documentSnapshot.exists) {
-        await firestore
-            .collection("ORDERS")
-            .add(documentSnapshot.data() as Map<String, dynamic>);
+    await database
+        .currentOrderCollection()
+        .findById(currentOrderId)
+        .then((md.Order? order) async {
+      if (order != null) {
+        await database.ordersCollection().add(order.toMap());
       }
     });
     Navigator.pushReplacement(
@@ -60,10 +58,9 @@ class _WaitingState extends State<Waiting> {
           children: [
             Expanded(
                 child: StreamBuilder<DocumentSnapshot>(
-                    stream: firestore
-                        .collection("CURRENT_ORDER")
-                        .doc(currentOrderId)
-                        .snapshots(),
+                    stream: database
+                        .currentOrderCollection()
+                        .streamById(currentOrderId),
                     builder: (context, snapshot) {
                       if (snapshot.hasData) {
                         final document =

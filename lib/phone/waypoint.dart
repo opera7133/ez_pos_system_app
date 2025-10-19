@@ -1,7 +1,8 @@
 import 'dart:math';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:ez_pos_system_app/utils/database.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:cloud_firestore/cloud_firestore.dart';
 
 class WayPoint extends StatefulWidget {
   final String deviceId;
@@ -12,7 +13,7 @@ class WayPoint extends StatefulWidget {
 }
 
 class _WayPointState extends State<WayPoint> {
-  final FirebaseFirestore firestore = FirebaseFirestore.instance;
+  final Database database = Database();
   List<dynamic> orders = [];
   String deviceId = "";
   String currentOrderId = "";
@@ -42,13 +43,13 @@ class _WayPointState extends State<WayPoint> {
   }
 
   Future<void> updateOrder(num deposit) async {
-    await firestore.collection('CURRENT_ORDER').doc(currentOrderId).update({
+    await database.currentOrderCollection().update(currentOrderId, {
       'deposit': deposit,
     });
   }
 
   Future<void> stopOrder() async {
-    await firestore.collection('CURRENT_ORDER').doc(currentOrderId).update({
+    await database.currentOrderCollection().update(currentOrderId, {
       'status': 'canceled',
     });
   }
@@ -94,7 +95,7 @@ class _WayPointState extends State<WayPoint> {
 
   Future<void> completePayment(num deposit, String transactionId) async {
     String barcode = generateRandomString(13);
-    await firestore.collection("CURRENT_ORDER").doc(currentOrderId).update({
+    await database.currentOrderCollection().update(currentOrderId, {
       'receiptId': barcode,
       "deposit": deposit,
       "amount": getTotal(),
@@ -102,10 +103,9 @@ class _WayPointState extends State<WayPoint> {
       "orderedAt": FieldValue.serverTimestamp(),
       "status": "complete"
     });
-    await firestore
-        .collection("CURRENT_ORDER")
-        .doc(currentOrderId)
-        .update({"transactionId": transactionId});
+    await database
+        .currentOrderCollection()
+        .update(currentOrderId, {"transactionId": transactionId});
     processing = false;
   }
 
@@ -125,7 +125,7 @@ class _WayPointState extends State<WayPoint> {
           children: [
             Expanded(
                 child: StreamBuilder<QuerySnapshot>(
-                    stream: firestore.collection("CURRENT_ORDER").snapshots(),
+                    stream: database.currentOrderCollection().stream(),
                     builder: (context, snapshot) {
                       if (!processing) {
                         if (snapshot.hasData) {

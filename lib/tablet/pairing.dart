@@ -2,10 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_dotenv/flutter_dotenv.dart';
-import 'package:http/http.dart' as http;
 import 'package:device_info_plus/device_info_plus.dart';
 import 'dart:io';
-import 'dart:convert';
 
 class PairingPage extends StatefulWidget {
   @override
