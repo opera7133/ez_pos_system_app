@@ -285,15 +285,6 @@ class _IssueNumberScreenState extends State<IssueNumberScreen> {
         _issuedNumber = nextNumber;
         _isIssuing = false;
       });
-
-      // 3秒後に番号表示をクリア
-      Future.delayed(const Duration(seconds: 3), () {
-        if (mounted) {
-          setState(() {
-            _issuedNumber = null;
-          });
-        }
-      });
     } catch (e) {
       setState(() {
         _isIssuing = false;
@@ -304,6 +295,12 @@ class _IssueNumberScreenState extends State<IssueNumberScreen> {
         );
       }
     }
+  }
+
+  void _resetForNextIssue() {
+    setState(() {
+      _issuedNumber = null;
+    });
   }
 
   @override
@@ -354,6 +351,68 @@ class _IssueNumberScreenState extends State<IssueNumberScreen> {
                   const Text(
                     '番です',
                     style: TextStyle(fontSize: 40, fontWeight: FontWeight.bold),
+                  ),
+                  const SizedBox(height: 50),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      ElevatedButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.grey[600],
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 50,
+                            vertical: 30,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(15),
+                          ),
+                        ),
+                        child: const Column(
+                          children: [
+                            Icon(Icons.arrow_back,
+                                size: 40, color: Colors.white),
+                            SizedBox(height: 10),
+                            Text(
+                              '戻る',
+                              style: TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(width: 30),
+                      ElevatedButton(
+                        onPressed: _resetForNextIssue,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.green,
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 50,
+                            vertical: 30,
+                          ),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(15),
+                          ),
+                        ),
+                        child: const Column(
+                          children: [
+                            Icon(Icons.add_box, size: 40, color: Colors.white),
+                            SizedBox(height: 10),
+                            Text(
+                              '続けて発行',
+                              style: TextStyle(
+                                fontSize: 24,
+                                fontWeight: FontWeight.bold,
+                                color: Colors.white,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               )

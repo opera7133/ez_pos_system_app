@@ -169,12 +169,14 @@ class Queue {
   DateTime? calledAt;
   bool called;
   final int number;
+  final String? lineNotifyId;
 
   Queue(
       {required this.queueId,
       required this.createdAt,
       this.calledAt,
       this.called = false,
+      this.lineNotifyId,
       required this.number});
 
   factory Queue.fromDocument(DocumentSnapshot doc) {
@@ -187,6 +189,7 @@ class Queue {
           : null,
       called: data['called'] ?? false,
       number: data['number'] ?? 0,
+      lineNotifyId: data['lineNotifyId'],
     );
   }
 
@@ -197,6 +200,7 @@ class Queue {
       'calledAt': calledAt != null ? Timestamp.fromDate(calledAt!) : null,
       'number': number,
       'called': called,
+      'lineNotifyId': lineNotifyId,
     };
   }
 }
