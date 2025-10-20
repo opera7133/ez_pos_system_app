@@ -161,7 +161,8 @@ class _PaymentState extends State<Payment> {
       await SunmiPrinter.printText('ID: ${order["deviceId"]}');
       await SunmiPrinter.lineWrap(1);
       await SunmiPrinter.setAlignment(SunmiPrintAlign.CENTER);
-      await SunmiPrinter.printText("領 収 書");
+      await SunmiPrinter.printText("領 収 書",
+          style: SunmiStyle(fontSize: SunmiFontSize.MD));
       await SunmiPrinter.lineWrap(1);
       await SunmiPrinter.line();
       await SunmiPrinter.lineWrap(1);
@@ -244,7 +245,7 @@ class _PaymentState extends State<Payment> {
       );
     } else {
       await SunmiPrinter.printText('電通部',
-          style: SunmiStyle(fontSize: SunmiFontSize.LG));
+          style: SunmiStyle(fontSize: SunmiFontSize.XL));
       await SunmiPrinter.printText('東京都品川区東大井1-10-40');
       await SunmiPrinter.lineWrap(1);
       await SunmiPrinter.printText(formatter.format(DateTime.now()));
@@ -252,7 +253,7 @@ class _PaymentState extends State<Payment> {
       await SunmiPrinter.lineWrap(1);
       await SunmiPrinter.setAlignment(SunmiPrintAlign.CENTER);
       await SunmiPrinter.printText("領 収 書",
-          style: SunmiStyle(fontSize: SunmiFontSize.MD));
+          style: SunmiStyle(fontSize: SunmiFontSize.LG));
       await SunmiPrinter.lineWrap(1);
       await SunmiPrinter.line(len: 48);
       await SunmiPrinter.lineWrap(1);
