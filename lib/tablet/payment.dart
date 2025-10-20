@@ -10,7 +10,10 @@ import 'package:ez_pos_system_app/tablet/result.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:sunmi_printer_plus/column_maker.dart';
+import 'package:sunmi_printer_plus/enums.dart';
 import 'package:sunmi_printer_plus/sunmi_printer_plus.dart';
+import 'package:sunmi_printer_plus/sunmi_style.dart';
 
 class Payment extends StatefulWidget {
   final String currentOrderId;
@@ -142,21 +145,23 @@ class _PaymentState extends State<Payment> {
     await database
         .currentOrderCollection()
         .update(currentOrderId, {"printed": true});
+
+    await SunmiPrinter.initPrinter();
+    await SunmiPrinter.startTransactionPrint();
+    await SunmiPrinter.setAlignment(SunmiPrintAlign.CENTER);
     await SunmiPrinter.lineWrap(2);
 
-    final int paperWidth = int.parse((await SunmiConfig.getPaper() ?? "58")
-        .replaceAll(RegExp(r"[^0-9]"), ""));
+    int paperWidth = await SunmiPrinter.paperSize();
     if (paperWidth == 56) {
       await SunmiPrinter.printText('電通部',
-          style: SunmiTextStyle(fontSize: 60, align: SunmiPrintAlign.CENTER));
-      await SunmiPrinter.printText('東京都品川区東大井1-10-40',
-          style: SunmiTextStyle(align: SunmiPrintAlign.CENTER));
+          style: SunmiStyle(fontSize: SunmiFontSize.LG));
+      await SunmiPrinter.printText('東京都品川区東大井1-10-40');
       await SunmiPrinter.lineWrap(1);
       await SunmiPrinter.printText(formatter.format(DateTime.now()));
       await SunmiPrinter.printText('ID: ${order["deviceId"]}');
       await SunmiPrinter.lineWrap(1);
-      await SunmiPrinter.printText("領 収 書",
-          style: SunmiTextStyle(fontSize: 40, align: SunmiPrintAlign.CENTER));
+      await SunmiPrinter.setAlignment(SunmiPrintAlign.CENTER);
+      await SunmiPrinter.printText("領 収 書");
       await SunmiPrinter.lineWrap(1);
       await SunmiPrinter.line();
       await SunmiPrinter.lineWrap(1);
@@ -164,226 +169,194 @@ class _PaymentState extends State<Payment> {
         if (item["quantity"] > 1) {
           await SunmiPrinter.printText(item["name"]);
           await SunmiPrinter.printRow(cols: [
-            SunmiColumn(
-                text: '',
-                width: 2,
-                style: SunmiTextStyle(align: SunmiPrintAlign.LEFT)),
-            SunmiColumn(
+            ColumnMaker(text: '', width: 2, align: SunmiPrintAlign.LEFT),
+            ColumnMaker(
                 text: '¥${item["price"]}',
                 width: 12,
-                style: SunmiTextStyle(align: SunmiPrintAlign.LEFT)),
-            SunmiColumn(
+                align: SunmiPrintAlign.LEFT),
+            ColumnMaker(
                 text: '${item["quantity"]}点',
                 width: 7,
-                style: SunmiTextStyle(align: SunmiPrintAlign.LEFT)),
-            SunmiColumn(
+                align: SunmiPrintAlign.LEFT),
+            ColumnMaker(
                 text: '¥${item["price"] * item["quantity"]}',
                 width: 12,
-                style: SunmiTextStyle(align: SunmiPrintAlign.RIGHT))
+                align: SunmiPrintAlign.RIGHT)
           ]);
         } else {
           await SunmiPrinter.printRow(cols: [
-            SunmiColumn(
-                text: item["name"],
-                width: 22,
-                style: SunmiTextStyle(align: SunmiPrintAlign.LEFT)),
-            SunmiColumn(
+            ColumnMaker(
+                text: item["name"], width: 22, align: SunmiPrintAlign.LEFT),
+            ColumnMaker(
                 text: '¥${item["price"]}',
                 width: 12,
-                style: SunmiTextStyle(align: SunmiPrintAlign.RIGHT))
+                align: SunmiPrintAlign.RIGHT)
           ]);
         }
       }
       await SunmiPrinter.lineWrap(1);
       await SunmiPrinter.printRow(cols: [
-        SunmiColumn(
-            text: '小計',
-            width: 10,
-            style: SunmiTextStyle(align: SunmiPrintAlign.LEFT)),
-        SunmiColumn(
-            text: "${getQuantity()}点",
-            width: 9,
-            style: SunmiTextStyle(align: SunmiPrintAlign.LEFT)),
-        SunmiColumn(
-            text: '¥${getTotal()}',
-            width: 14,
-            style: SunmiTextStyle(align: SunmiPrintAlign.RIGHT))
+        ColumnMaker(text: '小計', width: 10, align: SunmiPrintAlign.LEFT),
+        ColumnMaker(
+            text: "${getQuantity()}点", width: 9, align: SunmiPrintAlign.LEFT),
+        ColumnMaker(
+            text: '¥${getTotal()}', width: 14, align: SunmiPrintAlign.RIGHT)
       ]);
+      await SunmiPrinter.bold();
       await SunmiPrinter.printRow(cols: [
-        SunmiColumn(
-            text: '合計',
-            width: 20,
-            style: SunmiTextStyle(align: SunmiPrintAlign.LEFT, bold: true)),
-        SunmiColumn(
-            text: '¥${getTotal()}',
-            width: 14,
-            style: SunmiTextStyle(align: SunmiPrintAlign.RIGHT, bold: true))
+        ColumnMaker(text: '合計', width: 20, align: SunmiPrintAlign.LEFT),
+        ColumnMaker(
+            text: '¥${getTotal()}', width: 14, align: SunmiPrintAlign.RIGHT)
       ]);
+      await SunmiPrinter.resetBold();
       await SunmiPrinter.lineWrap(1);
       if (order["type"] == "cash") {
         await SunmiPrinter.printRow(cols: [
-          SunmiColumn(
-              text: '現金',
-              width: 20,
-              style: SunmiTextStyle(align: SunmiPrintAlign.LEFT)),
-          SunmiColumn(
+          ColumnMaker(text: '現金', width: 20, align: SunmiPrintAlign.LEFT),
+          ColumnMaker(
               text: '¥${order["deposit"]}',
               width: 14,
-              style: SunmiTextStyle(align: SunmiPrintAlign.RIGHT))
+              align: SunmiPrintAlign.RIGHT)
         ]);
       } else {
         await SunmiPrinter.printRow(cols: [
-          SunmiColumn(
-              text: '電子決済',
-              width: 20,
-              style: SunmiTextStyle(align: SunmiPrintAlign.LEFT)),
-          SunmiColumn(
+          ColumnMaker(text: '電子決済', width: 20, align: SunmiPrintAlign.LEFT),
+          ColumnMaker(
               text: '¥${order["deposit"]}',
               width: 14,
-              style: SunmiTextStyle(align: SunmiPrintAlign.RIGHT))
+              align: SunmiPrintAlign.RIGHT)
         ]);
       }
       await SunmiPrinter.printRow(cols: [
-        SunmiColumn(
-            text: 'お釣り',
-            width: 20,
-            style: SunmiTextStyle(align: SunmiPrintAlign.LEFT)),
-        SunmiColumn(
+        ColumnMaker(text: 'お釣り', width: 20, align: SunmiPrintAlign.LEFT),
+        ColumnMaker(
             text: '¥${order["deposit"] - getTotal()}',
             width: 14,
-            style: SunmiTextStyle(align: SunmiPrintAlign.RIGHT))
+            align: SunmiPrintAlign.RIGHT)
       ]);
       await SunmiPrinter.lineWrap(1);
       await SunmiPrinter.line();
       await SunmiPrinter.lineWrap(1);
       await SunmiPrinter.printBarCode(
         order["receiptId"],
-        style: SunmiBarcodeStyle(
-          height: 60,
-          textPos: SunmiBarcodeTextPos.TEXT_UNDER,
-        ),
+        height: 60,
+        textPosition: SunmiBarcodeTextPos.TEXT_UNDER,
       );
     } else {
       await SunmiPrinter.printText('電通部',
-          style: SunmiTextStyle(fontSize: 60, align: SunmiPrintAlign.CENTER));
-      await SunmiPrinter.printText('東京都品川区東大井1-10-40',
-          style: SunmiTextStyle(align: SunmiPrintAlign.CENTER));
+          style: SunmiStyle(fontSize: SunmiFontSize.LG));
+      await SunmiPrinter.printText('東京都品川区東大井1-10-40');
       await SunmiPrinter.lineWrap(1);
       await SunmiPrinter.printText(formatter.format(DateTime.now()));
       await SunmiPrinter.printText('ID: ${order["deviceId"]}');
       await SunmiPrinter.lineWrap(1);
+      await SunmiPrinter.setAlignment(SunmiPrintAlign.CENTER);
       await SunmiPrinter.printText("領 収 書",
-          style: SunmiTextStyle(fontSize: 40, align: SunmiPrintAlign.CENTER));
+          style: SunmiStyle(fontSize: SunmiFontSize.MD));
       await SunmiPrinter.lineWrap(1);
-      await SunmiPrinter.line(type: "solid");
+      await SunmiPrinter.line(len: 48);
       await SunmiPrinter.lineWrap(1);
       for (final Map<String, dynamic> item in order["items"]) {
         if (item["quantity"] > 1) {
           await SunmiPrinter.printText(item["name"]);
           await SunmiPrinter.printRow(cols: [
-            SunmiColumn(
-                text: '',
-                width: 2,
-                style: SunmiTextStyle(align: SunmiPrintAlign.LEFT)),
-            SunmiColumn(
+            ColumnMaker(text: '', width: 2, align: SunmiPrintAlign.LEFT),
+            ColumnMaker(
                 text: '¥${item["price"]}',
                 width: 14,
-                style: SunmiTextStyle(align: SunmiPrintAlign.LEFT)),
-            SunmiColumn(
+                align: SunmiPrintAlign.LEFT),
+            ColumnMaker(
                 text: '${item["quantity"]}点',
                 width: 18,
-                style: SunmiTextStyle(align: SunmiPrintAlign.LEFT)),
-            SunmiColumn(
+                align: SunmiPrintAlign.LEFT),
+            ColumnMaker(
                 text: '¥${item["price"] * item["quantity"]}',
                 width: 12,
-                style: SunmiTextStyle(align: SunmiPrintAlign.RIGHT))
+                align: SunmiPrintAlign.RIGHT)
           ]);
         } else {
           await SunmiPrinter.printRow(cols: [
-            SunmiColumn(
-                text: item["name"],
-                width: 36,
-                style: SunmiTextStyle(align: SunmiPrintAlign.LEFT)),
-            SunmiColumn(
+            ColumnMaker(
+                text: item["name"], width: 36, align: SunmiPrintAlign.LEFT),
+            ColumnMaker(
                 text: '¥${item["price"]}',
                 width: 12,
-                style: SunmiTextStyle(align: SunmiPrintAlign.RIGHT))
+                align: SunmiPrintAlign.RIGHT)
           ]);
         }
       }
       await SunmiPrinter.lineWrap(1);
       await SunmiPrinter.printRow(cols: [
-        SunmiColumn(
-            text: '小計',
-            width: 14,
-            style: SunmiTextStyle(align: SunmiPrintAlign.LEFT)),
-        SunmiColumn(
-            text: "${getQuantity()}点",
-            width: 19,
-            style: SunmiTextStyle(align: SunmiPrintAlign.LEFT)),
-        SunmiColumn(
-            text: '¥${getTotal()}',
-            width: 14,
-            style: SunmiTextStyle(align: SunmiPrintAlign.RIGHT))
+        ColumnMaker(text: '小計', width: 14, align: SunmiPrintAlign.LEFT),
+        ColumnMaker(
+            text: "${getQuantity()}点", width: 19, align: SunmiPrintAlign.LEFT),
+        ColumnMaker(
+            text: '¥${getTotal()}', width: 14, align: SunmiPrintAlign.RIGHT)
       ]);
+      await SunmiPrinter.bold();
       await SunmiPrinter.printRow(cols: [
-        SunmiColumn(
-            text: '合計',
-            width: 34,
-            style: SunmiTextStyle(align: SunmiPrintAlign.LEFT, bold: true)),
-        SunmiColumn(
-            text: '¥${getTotal()}',
-            width: 14,
-            style: SunmiTextStyle(align: SunmiPrintAlign.RIGHT, bold: true))
+        ColumnMaker(text: '合計', width: 34, align: SunmiPrintAlign.LEFT),
+        ColumnMaker(
+            text: '¥${getTotal()}', width: 14, align: SunmiPrintAlign.RIGHT)
       ]);
+      await SunmiPrinter.resetBold();
       await SunmiPrinter.lineWrap(1);
       if (order["type"] == "cash") {
         await SunmiPrinter.printRow(cols: [
-          SunmiColumn(
-              text: '現金',
-              width: 34,
-              style: SunmiTextStyle(align: SunmiPrintAlign.LEFT)),
-          SunmiColumn(
+          ColumnMaker(text: '現金', width: 34, align: SunmiPrintAlign.LEFT),
+          ColumnMaker(
               text: '¥${order["deposit"]}',
               width: 14,
-              style: SunmiTextStyle(align: SunmiPrintAlign.RIGHT))
+              align: SunmiPrintAlign.RIGHT)
         ]);
       } else {
         await SunmiPrinter.printRow(cols: [
-          SunmiColumn(
-              text: '電子決済',
-              width: 34,
-              style: SunmiTextStyle(align: SunmiPrintAlign.LEFT)),
-          SunmiColumn(
+          ColumnMaker(text: '電子決済', width: 34, align: SunmiPrintAlign.LEFT),
+          ColumnMaker(
               text: '¥${order["deposit"]}',
               width: 14,
-              style: SunmiTextStyle(align: SunmiPrintAlign.RIGHT))
+              align: SunmiPrintAlign.RIGHT)
         ]);
       }
       await SunmiPrinter.printRow(cols: [
-        SunmiColumn(
-            text: 'お釣り',
-            width: 34,
-            style: SunmiTextStyle(align: SunmiPrintAlign.LEFT)),
-        SunmiColumn(
+        ColumnMaker(text: 'お釣り', width: 34, align: SunmiPrintAlign.LEFT),
+        ColumnMaker(
             text: '¥${order["deposit"] - getTotal()}',
             width: 14,
-            style: SunmiTextStyle(align: SunmiPrintAlign.RIGHT))
+            align: SunmiPrintAlign.RIGHT)
       ]);
       await SunmiPrinter.lineWrap(1);
-      await SunmiPrinter.line(type: "solid");
+      await SunmiPrinter.line(len: 48);
       await SunmiPrinter.lineWrap(1);
+      await SunmiPrinter.setAlignment(SunmiPrintAlign.CENTER);
       await SunmiPrinter.printBarCode(
         order["receiptId"],
-        style: SunmiBarcodeStyle(
-            height: 60,
-            textPos: SunmiBarcodeTextPos.TEXT_UNDER,
-            align: SunmiPrintAlign.CENTER),
+        height: 60,
+        textPosition: SunmiBarcodeTextPos.TEXT_UNDER,
       );
     }
 
     await SunmiPrinter.lineWrap(4);
-    await SunmiPrinter.cutPaper();
+    await SunmiPrinter.submitTransactionPrint();
+    await SunmiPrinter.cut();
+    await SunmiPrinter.exitTransactionPrint();
+  }
+
+  Future<void> bindPrinter() async {
+    final bool? res = await SunmiPrinter.bindingPrinter();
+    if (res != null && res) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('プリンターに接続しました'),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('プリンターに接続できませんでした'),
+        ),
+      );
+    }
   }
 
   Future<void> updateOrder(num deposit) async {
@@ -403,9 +376,10 @@ class _PaymentState extends State<Payment> {
   }
 
   Future<void> setLCD(num total) async {
-    await SunmiLcd.configLCD(status: SunmiLCDStatus.WAKE);
-    await SunmiLcd.configLCD(status: SunmiLCDStatus.CLEAR);
-    await SunmiLcd.lcdString("合計\n$total円", size: 12, fill: false);
+    await SunmiPrinter.lcdInitialize();
+    await SunmiPrinter.lcdWakeup();
+    await SunmiPrinter.lcdClear();
+    await SunmiPrinter.lcdDoubleString("合計", "$total円");
   }
 
   @override
@@ -421,6 +395,9 @@ class _PaymentState extends State<Payment> {
     getSettings(key: "enablePrinter").then((value) {
       setState(() {
         enablePrinter = value ?? false;
+        if (enablePrinter) {
+          bindPrinter();
+        }
       });
     });
     getSettings(key: "enableLCD").then((value) {

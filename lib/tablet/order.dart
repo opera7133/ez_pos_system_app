@@ -127,7 +127,7 @@ class _OrderState extends State<OrderPage> {
       'items': orders.map((e) => e.toMap()).toList(),
     });
     if (await getSettings(key: "enableLCD") ?? false) {
-      await SunmiLcd.configLCD(status: SunmiLCDStatus.CLEAR);
+      await SunmiPrinter.lcdClear();
     }
   }
 
@@ -165,15 +165,17 @@ class _OrderState extends State<OrderPage> {
   }
 
   Future<void> startLCD() async {
-    await SunmiLcd.configLCD(status: SunmiLCDStatus.WAKE);
-    await SunmiLcd.configLCD(status: SunmiLCDStatus.CLEAR);
+    await SunmiPrinter.bindingPrinter();
+    await SunmiPrinter.lcdInitialize();
+    await SunmiPrinter.lcdWakeup();
+    await SunmiPrinter.lcdClear();
   }
 
   Future<void> displayLCD(String itemName, num price) async {
     if (!(await getSettings(key: "enableLCD") ?? false)) {
       return;
     }
-    await SunmiLcd.lcdString("$itemName\n$price円", size: 12, fill: false);
+    await SunmiPrinter.lcdDoubleString(itemName, "$price円");
   }
 
   @override

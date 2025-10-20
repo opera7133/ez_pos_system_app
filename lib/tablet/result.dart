@@ -35,8 +35,9 @@ class _ResultState extends State<ResultPage> {
   }
 
   Future<void> startLCD() async {
-    await SunmiLcd.configLCD(status: SunmiLCDStatus.WAKE);
-    await SunmiLcd.configLCD(status: SunmiLCDStatus.CLEAR);
+    await SunmiPrinter.lcdInitialize();
+    await SunmiPrinter.lcdWakeup();
+    await SunmiPrinter.lcdClear();
   }
 
   num getTotal(dynamic items) {
@@ -53,11 +54,11 @@ class _ResultState extends State<ResultPage> {
         await database.currentOrderCollection().findById(currentOrderId!);
     if (order == null) return;
     final num price = (order.deposit ?? 0) - getTotal(order.items);
-    await SunmiLcd.lcdString("お釣り  $price円\nご購入感謝！", size: 12, fill: false);
+    await SunmiPrinter.lcdDoubleString("お釣り  $price円", "ご購入感謝！");
   }
 
   Future<void> openDrawer() async {
-    await SunmiDrawer.openDrawer();
+    await SunmiPrinter.openDrawer();
   }
 
   @override

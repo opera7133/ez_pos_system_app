@@ -47,7 +47,7 @@ dependencies:
   audioplayers: ^6.5.1
   shared_preferences: ^2.2.3
   appcheck: ^1.0.6
-  sunmi_printer_plus: ^4.1.1
+  sunmi_printer_plus: ^3.0.1
   qr_flutter: ^4.1.0
   intl: ^0.20.2
   flutter_dotenv: ^6.0.0

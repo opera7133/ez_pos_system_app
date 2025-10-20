@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:sunmi_printer_plus/enums.dart';
+import 'package:sunmi_printer_plus/sunmi_style.dart';
 import '../utils/database.dart';
 import '../utils/model.dart' as md;
 import 'package:intl/intl.dart';
@@ -134,121 +136,75 @@ class _IssueNumberScreenState extends State<IssueNumberScreen> {
     return prefs.getBool(key);
   }
 
+  Future<void> bindPrinter() async {
+    final bool? res = await SunmiPrinter.bindingPrinter();
+    if (res != null && res) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('プリンターに接続しました'),
+        ),
+      );
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('プリンターに接続できませんでした'),
+        ),
+      );
+    }
+  }
+
   Future<void> printQueueTicket(md.Queue queue) async {
     try {
       await SunmiPrinter.lineWrap(2);
+      await SunmiPrinter.printText('電通部',
+          style: SunmiStyle(
+              fontSize: SunmiFontSize.XL, align: SunmiPrintAlign.CENTER));
+      await SunmiPrinter.printText('順番待ち整理券',
+          style: SunmiStyle(
+              fontSize: SunmiFontSize.LG, align: SunmiPrintAlign.CENTER));
+      await SunmiPrinter.lineWrap(2);
+      await SunmiPrinter.printText('あなたの番号は',
+          style: SunmiStyle(
+              fontSize: SunmiFontSize.MD, align: SunmiPrintAlign.CENTER));
+      await SunmiPrinter.lineWrap(1);
+      await SunmiPrinter.printText('${queue.number}',
+          style: SunmiStyle(
+              fontSize: SunmiFontSize.XL,
+              align: SunmiPrintAlign.CENTER,
+              bold: true));
+      await SunmiPrinter.lineWrap(1);
+      await SunmiPrinter.printText('番です',
+          style: SunmiStyle(
+              fontSize: SunmiFontSize.MD, align: SunmiPrintAlign.CENTER));
+      await SunmiPrinter.lineWrap(2);
+      await SunmiPrinter.line();
+      await SunmiPrinter.lineWrap(1);
 
-      final int paperWidth = int.parse((await SunmiConfig.getPaper() ?? "58")
-          .replaceAll(RegExp(r"[^0-9]"), ""));
+      await SunmiPrinter.printText('発行日時: ${formatter.format(queue.createdAt)}',
+          style: SunmiStyle(align: SunmiPrintAlign.LEFT));
 
-      if (paperWidth == 56) {
-        // 58mm用
-        await SunmiPrinter.printText('電通部',
-            style: SunmiTextStyle(fontSize: 60, align: SunmiPrintAlign.CENTER));
-        await SunmiPrinter.printText('順番待ち整理券',
-            style: SunmiTextStyle(
-                fontSize: 32, align: SunmiPrintAlign.CENTER, bold: true));
-        await SunmiPrinter.lineWrap(2);
+      await SunmiPrinter.printText('整理券ID: ${queue.queueId}',
+          style: SunmiStyle(align: SunmiPrintAlign.LEFT));
+      await SunmiPrinter.lineWrap(1);
+      await SunmiPrinter.line();
+      await SunmiPrinter.lineWrap(1);
 
-        await SunmiPrinter.printText('あなたの番号は',
-            style: SunmiTextStyle(fontSize: 24, align: SunmiPrintAlign.CENTER));
-        await SunmiPrinter.lineWrap(1);
+      await SunmiPrinter.printText('お呼び出しまで',
+          style: SunmiStyle(align: SunmiPrintAlign.CENTER));
+      await SunmiPrinter.printText('しばらくお待ちください',
+          style: SunmiStyle(align: SunmiPrintAlign.CENTER));
+      await SunmiPrinter.lineWrap(1);
 
-        await SunmiPrinter.printText('${queue.number}',
-            style: SunmiTextStyle(
-                fontSize: 100, align: SunmiPrintAlign.CENTER, bold: true));
-        await SunmiPrinter.lineWrap(1);
+      // QRコード印刷
+      await SunmiPrinter.printQRCode(
+          'https://wait.ja1ykl.com?id=${queue.queueId}',
+          size: 6);
+      await SunmiPrinter.lineWrap(1);
+      await SunmiPrinter.printText('QRコードで状況確認',
+          style: SunmiStyle(align: SunmiPrintAlign.CENTER));
 
-        await SunmiPrinter.printText('番です',
-            style: SunmiTextStyle(fontSize: 24, align: SunmiPrintAlign.CENTER));
-        await SunmiPrinter.lineWrap(2);
-
-        await SunmiPrinter.line();
-        await SunmiPrinter.lineWrap(1);
-
-        await SunmiPrinter.printText('発行日時',
-            style: SunmiTextStyle(align: SunmiPrintAlign.LEFT));
-        await SunmiPrinter.printText(formatter.format(queue.createdAt),
-            style: SunmiTextStyle(align: SunmiPrintAlign.LEFT, bold: true));
-        await SunmiPrinter.lineWrap(1);
-
-        await SunmiPrinter.printText('整理券ID',
-            style: SunmiTextStyle(align: SunmiPrintAlign.LEFT));
-        await SunmiPrinter.printText(queue.queueId,
-            style: SunmiTextStyle(align: SunmiPrintAlign.LEFT, fontSize: 16));
-        await SunmiPrinter.lineWrap(1);
-
-        await SunmiPrinter.line();
-        await SunmiPrinter.lineWrap(1);
-
-        await SunmiPrinter.printText('お呼び出しまで',
-            style: SunmiTextStyle(align: SunmiPrintAlign.CENTER));
-        await SunmiPrinter.printText('しばらくお待ちください',
-            style: SunmiTextStyle(align: SunmiPrintAlign.CENTER));
-        await SunmiPrinter.lineWrap(2);
-
-        // QRコード印刷
-        await SunmiPrinter.printQRCode(
-            'https://wait.ja1ykl.com?id=${queue.queueId}');
-        await SunmiPrinter.lineWrap(1);
-        await SunmiPrinter.printText('QRコードで状況確認',
-            style: SunmiTextStyle(align: SunmiPrintAlign.CENTER, fontSize: 18));
-      } else {
-        // 80mm用
-        await SunmiPrinter.printText('電通部',
-            style: SunmiTextStyle(fontSize: 60, align: SunmiPrintAlign.CENTER));
-        await SunmiPrinter.printText('順番待ち整理券',
-            style: SunmiTextStyle(
-                fontSize: 40, align: SunmiPrintAlign.CENTER, bold: true));
-        await SunmiPrinter.lineWrap(2);
-
-        await SunmiPrinter.printText('あなたの番号は',
-            style: SunmiTextStyle(fontSize: 32, align: SunmiPrintAlign.CENTER));
-        await SunmiPrinter.lineWrap(1);
-
-        await SunmiPrinter.printText('${queue.number}',
-            style: SunmiTextStyle(
-                fontSize: 120, align: SunmiPrintAlign.CENTER, bold: true));
-        await SunmiPrinter.lineWrap(1);
-
-        await SunmiPrinter.printText('番です',
-            style: SunmiTextStyle(fontSize: 32, align: SunmiPrintAlign.CENTER));
-        await SunmiPrinter.lineWrap(2);
-
-        await SunmiPrinter.line(type: "solid");
-        await SunmiPrinter.lineWrap(1);
-
-        await SunmiPrinter.printText('発行日時',
-            style: SunmiTextStyle(align: SunmiPrintAlign.LEFT));
-        await SunmiPrinter.printText(formatter.format(queue.createdAt),
-            style: SunmiTextStyle(align: SunmiPrintAlign.LEFT, bold: true));
-        await SunmiPrinter.lineWrap(1);
-
-        await SunmiPrinter.printText('整理券ID',
-            style: SunmiTextStyle(align: SunmiPrintAlign.LEFT));
-        await SunmiPrinter.printText(queue.queueId,
-            style: SunmiTextStyle(align: SunmiPrintAlign.LEFT, fontSize: 18));
-        await SunmiPrinter.lineWrap(1);
-
-        await SunmiPrinter.line(type: "solid");
-        await SunmiPrinter.lineWrap(1);
-
-        await SunmiPrinter.printText('お呼び出しまで',
-            style: SunmiTextStyle(align: SunmiPrintAlign.CENTER, fontSize: 24));
-        await SunmiPrinter.printText('しばらくお待ちください',
-            style: SunmiTextStyle(align: SunmiPrintAlign.CENTER, fontSize: 24));
-        await SunmiPrinter.lineWrap(2);
-
-        // QRコード印刷
-        await SunmiPrinter.printQRCode(
-            'https://wait.ja1ykl.com?id=${queue.queueId}');
-        await SunmiPrinter.lineWrap(1);
-        await SunmiPrinter.printText('QRコードで状況確認',
-            style: SunmiTextStyle(align: SunmiPrintAlign.CENTER, fontSize: 20));
-      }
-
-      await SunmiPrinter.lineWrap(4);
-      await SunmiPrinter.cutPaper();
+      await SunmiPrinter.lineWrap(2);
+      await SunmiPrinter.cut();
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -309,6 +265,9 @@ class _IssueNumberScreenState extends State<IssueNumberScreen> {
     getSettings(key: "enablePrinter").then((value) {
       setState(() {
         enablePrinter = value ?? false;
+        if (enablePrinter) {
+          bindPrinter();
+        }
       });
     });
   }
